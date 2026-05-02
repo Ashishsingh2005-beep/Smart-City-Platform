@@ -28,12 +28,22 @@ const mongoose = require('mongoose');
 
 // --- DATABASE CONFIGURATION ---
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/smartcity';
-mongoose.connect(MONGODB_URI)
-    .then(() => {
-        console.log('🚀 Connected to MongoDB Cloud/Local');
-        migrateData(); // Sync existing JSON data to Mongo on first run
-    })
-    .catch(err => console.error('MongoDB connection error:', err));
+
+console.log('Attempting to connect to MongoDB...');
+
+mongoose.connect(MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+.then(() => {
+    console.log('🚀 Successfully Connected to MongoDB Cloud');
+    migrateData(); 
+})
+.catch(err => {
+    console.error('❌ MongoDB Connection Error Details:');
+    console.error('Message:', err.message);
+});
+
 
 // --- DATA MODELS (Schemas) ---
 const UserSchema = new mongoose.Schema({
