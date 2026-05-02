@@ -162,7 +162,6 @@ class Blockchain {
 const smartCityChain = new Blockchain();
 smartCityChain.init();
 
-const smartCityChain = new Blockchain();
 
 // --- Reward System Helper (DB Powered) ---
 const rewardUser = async (email, points) => {
