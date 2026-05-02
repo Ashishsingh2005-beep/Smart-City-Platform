@@ -31,14 +31,12 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/smartc
 
 console.log('Attempting to connect to MongoDB...');
 
-mongoose.connect(MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-})
+mongoose.connect(MONGODB_URI)
 .then(() => {
     console.log('🚀 Successfully Connected to MongoDB Cloud');
     migrateData(); 
 })
+
 .catch(err => {
     console.error('❌ MongoDB Connection Error Details:');
     console.error('Message:', err.message);
