@@ -135,7 +135,8 @@
             const email = emailInput.value;
             const err = document.getElementById('errorMsg');
 
-            if (!App.security.validateEmail(email)) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
                 err.innerText = "Incorrect email format. Please check your email.";
                 err.style.display = 'block';
                 emailInput.style.borderColor = 'var(--danger)';
