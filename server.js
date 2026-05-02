@@ -345,7 +345,10 @@ app.get('/api/officers', async (req, res) => {
 app.get('/api/complaints', async (req, res) => {
     const complaints = await Complaint.find().sort({ timestamp: -1 });
     res.json(complaints);
+});
+
 app.post('/api/complaints', authenticateToken, async (req, res) => {
+
     try {
         const data = req.body;
         
