@@ -512,4 +512,4 @@ app.delete('/api/complaints/:id', authenticateToken, async (req, res) => {
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
 
 process.on('uncaughtException', (err) => console.error('Critical Error:', err));
-setInterval(() => { }, 60000);60000);
+setInterval(() => { }, 60000);
