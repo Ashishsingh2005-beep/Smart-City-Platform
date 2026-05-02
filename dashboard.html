@@ -422,8 +422,8 @@
                     });
                 }
 
-                // Fetch data asynchronously without blocking the UI and without artificial delays
-                App.store.loadData().then(() => {
+                // Implement Optimistic UI (Stale-while-revalidate)
+                const renderUI = () => {
                     const myComplaints = App.complaints.getUserComplaints(user.email);
 
                     // Update Stats
@@ -441,34 +441,50 @@
                             tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No complaints found. File a new complaint to get started.</td></tr>`;
                         } else {
                             tbody.innerHTML = '';
-                            // Show only latest 5 for dashboard
                             myComplaints.slice().reverse().slice(0, 5).forEach(c => {
                                 const statusClass = `status-${c.status}`;
                                 const priorityClass = c.priority === 'High' ? 'color: #ef4444; font-weight:bold;' : (c.priority === 'Medium' ? 'color: #f97316;' : 'color: #16a34a;');
                                 
-                                const row = `
+                                tbody.innerHTML += `
                                     <tr>
                                         <td>${c.id}</td>
                                         <td>${c.subject}</td>
                                         <td>${c.category}</td>
                                         <td style="${priorityClass}">${c.priority}</td>
                                         <td><span class="status-badge ${statusClass}">${c.status.toUpperCase()}</span></td>
-                                        <td><a href="my-complaints.html" class="btn btn-secondary" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 8px;">Details</a></td>
+                                        <td style="display: flex; gap: 5px;">
+                                            <a href="my-complaints.html" class="btn btn-secondary" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 8px;">Details</a>
+                                            <button onclick="downloadReceipt('${c.id}')" class="btn btn-secondary" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 8px;"><i class="fa-solid fa-download"></i></button>
+                                        </td>
                                     </tr>
                                 `;
-                                tbody.innerHTML += row;
                             });
                         }
                     }
+
+                    // Clear existing markers to prevent duplicates
+                    if (window.complaintMarkers) {
+                        window.complaintMarkers.forEach(m => map.removeLayer(m));
+                    }
+                    window.complaintMarkers = [];
 
                     // Add markers
                     myComplaints.forEach((c) => {
                         const sadhash = c.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
                         const offsetLat = (sadhash % 100 - 50) * 0.001;
                         const offsetLng = (sadhash % 80 - 40) * 0.001;
-                        L.marker([28.6139 + offsetLat, 77.2090 + offsetLng]).addTo(map)
+                        const marker = L.marker([28.6139 + offsetLat, 77.2090 + offsetLng]).addTo(map)
                             .bindPopup(`<b>${c.subject}</b><br>Status: ${c.status}`);
+                        window.complaintMarkers.push(marker);
                     });
+                };
+
+                // 1. Render INSTANTLY using the local cache
+                renderUI();
+
+                // 2. Fetch fresh data from MongoDB in the background and silently update UI
+                App.store.loadData().then(() => {
+                    renderUI();
                 });
 
             } catch (e) {
@@ -477,7 +493,59 @@
                 if (mapEl) mapEl.innerText = "Map could not load.";
             }
         });
+
+        function downloadReceipt(id) {
+            const complaints = App.store.getComplaints();
+            const c = complaints.find(comp => comp.id === id);
+            if (!c) return;
+
+            const receiptDiv = document.createElement('div');
+            receiptDiv.style.cssText = "padding: 40px; font-family: 'Outfit', sans-serif; color: #000; background: #fff; width: 800px;";
+            receiptDiv.innerHTML = `
+                <div style="border-bottom: 2px solid #06b6d4; padding-bottom: 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h1 style="color: #0f172a; margin: 0; font-size: 2rem;">SmartCity Governance</h1>
+                        <p style="margin: 5px 0 0; color: #64748b;">Official Complaint Report</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <h2 style="margin: 0; color: #06b6d4; font-size: 1.5rem;">${c.id}</h2>
+                        <p style="margin: 5px 0 0; color: #64748b;">Date: ${c.date}</p>
+                    </div>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                    <tr><td style="padding: 10px; border: 1px solid #e2e8f0; width: 30%;"><strong>Subject:</strong></td><td style="padding: 10px; border: 1px solid #e2e8f0;">${c.subject}</td></tr>
+                    <tr><td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>Category:</strong></td><td style="padding: 10px; border: 1px solid #e2e8f0;">${c.category}</td></tr>
+                    <tr><td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>Priority:</strong></td><td style="padding: 10px; border: 1px solid #e2e8f0;">${c.priority}</td></tr>
+                    <tr><td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>Status:</strong></td><td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;">${c.status.toUpperCase()}</td></tr>
+                    <tr><td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>Location:</strong></td><td style="padding: 10px; border: 1px solid #e2e8f0;">${c.location}</td></tr>
+                </table>
+                <div style="margin-bottom: 30px;">
+                    <h3 style="color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">Description</h3>
+                    <p style="color: #334155; line-height: 1.6;">${c.description}</p>
+                </div>
+                <div>
+                    <h3 style="color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">Audit Trail</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        ${c.history ? c.history.map(h => `<li style="margin-bottom: 10px; font-size: 0.9rem;"><strong style="color:#06b6d4;">${new Date(h.timestamp).toLocaleString()}</strong> - ${h.action}: ${h.details}</li>`).join('') : '<li>No history recorded</li>'}
+                    </ul>
+                </div>
+                <div style="margin-top: 50px; text-align: center; font-size: 0.8rem; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+                    This is a digitally generated report securely backed by the SmartCity Blockchain Ledger.
+                </div>
+            `;
+            
+            const opt = {
+                margin:       0.5,
+                filename:     `Complaint_Report_${c.id}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+            
+            html2pdf().set(opt).from(receiptDiv).save();
+        }
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </body>
 
 </html>

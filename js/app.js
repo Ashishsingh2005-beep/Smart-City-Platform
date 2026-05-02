@@ -75,11 +75,22 @@ const App = {
 
         // Initialize Data (Fetch from server)
         async loadData() {
-            const c = await App.api.get('/complaints');
-            if (c) App.store.complaintsCache = c;
-
-            const o = await App.api.get('/officers');
-            if (o) App.store.officersCache = o;
+            try {
+                const [c, o] = await Promise.all([
+                    App.api.get('/complaints'),
+                    App.api.get('/officers')
+                ]);
+                if (c) {
+                    App.store.complaintsCache = c;
+                    localStorage.setItem('sc_complaints', JSON.stringify(c));
+                }
+                if (o) {
+                    App.store.officersCache = o;
+                    localStorage.setItem('sc_officers', JSON.stringify(o));
+                }
+            } catch (e) {
+                console.error("Failed to load data from server:", e);
+            }
         },
 
         getUsers: () => JSON.parse(localStorage.getItem('sc_users')) || [], // Keep users implicit or fetch if needed
@@ -601,33 +612,11 @@ const App = {
         // Navbar Scroll Hook (Present in all pages)
         const navbar = document.querySelector('.navbar');
         if (navbar) {
-            // --- Theme Management ---
-            const themeBtn = document.createElement('button');
-            themeBtn.className = 'theme-toggle-btn';
-            themeBtn.title = 'Toggle Theme';
-
-            const updateThemeUI = () => {
-                const isDark = document.body.classList.contains('dark-mode');
-                themeBtn.innerHTML = isDark ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
-                localStorage.setItem('sc_theme', isDark ? 'dark' : 'light');
-            };
-
-            themeBtn.onclick = () => {
-                document.body.classList.toggle('dark-mode');
-                updateThemeUI();
-            };
-
-            // Initialize theme
-            const savedTheme = localStorage.getItem('sc_theme') || 'dark';
-            if (savedTheme === 'dark') {
-                document.body.classList.add('dark-mode');
-            } else {
-                document.body.classList.remove('dark-mode');
-            }
-            updateThemeUI();
+            // Enforce Dark Mode permanently
+            document.body.classList.add('dark-mode');
+            localStorage.setItem('sc_theme', 'dark');
 
             const authDiv = document.querySelector('.auth-buttons');
-            if (authDiv) authDiv.insertBefore(themeBtn, authDiv.firstChild);
 
             window.addEventListener('scroll', () => {
                 if (window.scrollY > 20) {

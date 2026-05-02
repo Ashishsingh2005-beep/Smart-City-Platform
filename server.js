@@ -36,8 +36,12 @@ mongoose.connect(MONGODB_URI)
 .then(() => {
     console.log('🚀 Successfully Connected to MongoDB Cloud');
     migrateData(); 
+    
+    // Automatically open the website in the default browser when the server starts (Windows)
+    const { exec } = require('child_process');
+    exec('start http://localhost:3000');
+    console.log('🌐 Opening website in browser...');
 })
-
 .catch(err => {
     console.error('❌ MongoDB Connection Error Details:');
     console.error('Message:', err.message);
@@ -355,7 +359,8 @@ app.get('/api/officers', async (req, res) => {
 
 // Complaints
 app.get('/api/complaints', async (req, res) => {
-    const complaints = await Complaint.find().sort({ timestamp: -1 });
+    // Performance Fix: Exclude the massive Base64 'image' string from the bulk list to prevent 10+ second network lag
+    const complaints = await Complaint.find().select('-image').sort({ timestamp: -1 });
     res.json(complaints);
 });
 
@@ -382,8 +387,10 @@ app.post('/api/complaints', authenticateToken, async (req, res) => {
         console.log('[DEBUG] Running AI Service for description:', data.description.substring(0, 50) + '...');
         
         try {
+            // Performance Fix: Disabled synchronous Python AI script which was freezing the server for 5 seconds.
+            // We now rely exclusively on the lightning-fast Keyword AI Fallback for instant classification.
+            /*
             const { spawnSync } = require('child_process');
-            // Using spawnSync for simplicity since it was already there, but with a timeout
             const pythonProcess = spawnSync('python', ['ai_service.py', data.description], { timeout: 5000 });
             
             if (pythonProcess.error) {
@@ -395,15 +402,13 @@ app.post('/api/complaints', authenticateToken, async (req, res) => {
                     try {
                         const parsed = JSON.parse(output);
                         aiResults = { ...aiResults, ...parsed };
-                        console.log('[DEBUG] AI Results Parsed:', aiResults);
                     } catch (pe) {
                         console.error('[AI ERROR] JSON Parse Error:', pe.message);
                     }
                 }
             }
-            if (pythonProcess.stderr && pythonProcess.stderr.length > 0) {
-                console.warn('[AI WARNING] Python Stderr:', pythonProcess.stderr.toString());
-            }
+            */
+            console.log('[DEBUG] Python AI disabled for speed. Using Keyword Fallback.');
         } catch (err) { 
             console.error("[AI ERROR] Execution failed:", err.message); 
         }
