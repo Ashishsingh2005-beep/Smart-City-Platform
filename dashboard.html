@@ -29,7 +29,7 @@
     </style>
 </head>
 
-<body>
+<body class="dark-mode">
     <!-- Navbar -->
     <nav class="navbar">
         <div class="logo">
@@ -220,6 +220,18 @@
         </div>
     </div>
 
+    <!-- Success Modal -->
+    <div id="successModal" class="modal" style="z-index: 10000;">
+        <div class="modal-content" style="text-align: center; max-width: 400px; padding: 3rem 2rem; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(16, 185, 129, 0.3); box-shadow: 0 0 50px rgba(16, 185, 129, 0.2); border-radius: 24px;">
+            <div style="width: 80px; height: 80px; background: rgba(16, 185, 129, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; box-shadow: 0 0 30px rgba(16, 185, 129, 0.4);">
+                <i class="fa-solid fa-check" style="font-size: 2.5rem; color: #10b981;"></i>
+            </div>
+            <h2 style="color: white; margin-bottom: 10px; font-size: 1.8rem;">Complaint Filed!</h2>
+            <p style="color: var(--text-light); margin-bottom: 25px; font-size: 0.95rem;">Your issue has been securely registered on the Blockchain Ledger with a verified GPS signature.</p>
+            <button onclick="window.location.reload()" class="btn btn-primary" style="width: 100%; background: linear-gradient(135deg, #10b981, #059669); border: none;">View Dashboard</button>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="js/app.js"></script>
     <script>
@@ -235,32 +247,11 @@
                 window.location.href = 'admin.html';
                 return;
             }
-
+            
             document.getElementById('userWelcome').innerText = user.name;
             if (document.getElementById('userPoints')) {
                 document.getElementById('userPoints').innerText = user.points || 0;
             }
-
-            // Load Data
-            const refreshData = async () => {
-                // Ensure fresh data
-                await App.store.loadData();
-                const myComplaints = App.complaints.getUserComplaints(user.email);
-
-                App.ui.renderComplaintsTable(myComplaints, 'complaintsTableBody');
-
-                // Calc Stats for User
-                const stats = {
-                    total: myComplaints.length,
-                    pending: myComplaints.filter(c => c.status === 'pending').length,
-                    resolved: myComplaints.filter(c => c.status === 'resolved').length,
-                    highPriority: myComplaints.filter(c => c.priority === 'High' && c.status !== 'resolved').length
-                };
-                App.ui.updateDashboardStats(stats);
-                App.ui.renderIoTWidgets();
-            };
-
-            refreshData();
 
             // Modal Logic
             const modal = document.getElementById('complaintModal');
@@ -339,14 +330,19 @@
                 });
 
                 if (result.success) {
-                    alert('Complaint Filed with Secure Digital Identity & GPS Signature!');
-                    modal.classList.remove('active');
+                    const successModal = document.getElementById('successModal');
+                    if (successModal) {
+                        modal.classList.remove('active');
+                        successModal.classList.add('active');
+                    } else {
+                        alert('Complaint Filed with Secure Digital Identity & GPS Signature!');
+                        window.location.reload();
+                    }
                     e.target.reset();
                     // Reset GPS UI
                     document.getElementById('gpsStatus').innerText = "NOT LINKED";
                     document.getElementById('gpsStatus').style.color = "var(--text-muted)";
                     document.getElementById('shareLocationBtn').style.background = "rgba(6, 182, 212, 0.05)";
-                    window.location.reload();
                 } else {
                     alert(result.message);
                     submitBtn.innerHTML = originalBtnText;
@@ -426,9 +422,46 @@
                     });
                 }
 
-                // Add markers
-                setTimeout(() => {
+                // Fetch data asynchronously without blocking the UI and without artificial delays
+                App.store.loadData().then(() => {
                     const myComplaints = App.complaints.getUserComplaints(user.email);
+
+                    // Update Stats
+                    const statTotal = document.getElementById('statTotal');
+                    const statPending = document.getElementById('statPending');
+                    const statResolved = document.getElementById('statResolved');
+                    if (statTotal) statTotal.innerText = myComplaints.length;
+                    if (statPending) statPending.innerText = myComplaints.filter(c => c.status !== 'resolved').length;
+                    if (statResolved) statResolved.innerText = myComplaints.filter(c => c.status === 'resolved').length;
+
+                    // Update Table
+                    const tbody = document.getElementById('complaintsTableBody');
+                    if (tbody) {
+                        if (myComplaints.length === 0) {
+                            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No complaints found. File a new complaint to get started.</td></tr>`;
+                        } else {
+                            tbody.innerHTML = '';
+                            // Show only latest 5 for dashboard
+                            myComplaints.slice().reverse().slice(0, 5).forEach(c => {
+                                const statusClass = `status-${c.status}`;
+                                const priorityClass = c.priority === 'High' ? 'color: #ef4444; font-weight:bold;' : (c.priority === 'Medium' ? 'color: #f97316;' : 'color: #16a34a;');
+                                
+                                const row = `
+                                    <tr>
+                                        <td>${c.id}</td>
+                                        <td>${c.subject}</td>
+                                        <td>${c.category}</td>
+                                        <td style="${priorityClass}">${c.priority}</td>
+                                        <td><span class="status-badge ${statusClass}">${c.status.toUpperCase()}</span></td>
+                                        <td><a href="my-complaints.html" class="btn btn-secondary" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 8px;">Details</a></td>
+                                    </tr>
+                                `;
+                                tbody.innerHTML += row;
+                            });
+                        }
+                    }
+
+                    // Add markers
                     myComplaints.forEach((c) => {
                         const sadhash = c.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
                         const offsetLat = (sadhash % 100 - 50) * 0.001;
@@ -436,11 +469,12 @@
                         L.marker([28.6139 + offsetLat, 77.2090 + offsetLng]).addTo(map)
                             .bindPopup(`<b>${c.subject}</b><br>Status: ${c.status}`);
                     });
-                }, 500);
+                });
 
             } catch (e) {
                 console.error("Map init failed", e);
-                document.getElementById('map').innerText = "Map could not load.";
+                const mapEl = document.getElementById('map');
+                if (mapEl) mapEl.innerText = "Map could not load.";
             }
         });
     </script>

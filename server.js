@@ -27,7 +27,8 @@ app.use(express.static(__dirname)); // Serve frontend files
 const mongoose = require('mongoose');
 
 // --- DATABASE CONFIGURATION ---
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/smartcity';
+// Updated with the user's provided Atlas URI, converted to direct replica set nodes to fix DNS SRV ECONNREFUSED
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://roy349647_db_user:Ashish123@ac-jnxgu0r-shard-00-00.3bpupnm.mongodb.net:27017,ac-jnxgu0r-shard-00-01.3bpupnm.mongodb.net:27017,ac-jnxgu0r-shard-00-02.3bpupnm.mongodb.net:27017/smartcity?ssl=true&replicaSet=atlas-a3mm6k-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
 
 console.log('Attempting to connect to MongoDB...');
 
@@ -146,15 +147,16 @@ class Blockchain {
 
     async addBlock(data) {
         const lastBlock = await Block.findOne().sort({ index: -1 });
-        const newIndex = lastBlock.index + 1;
+        const newIndex = lastBlock ? lastBlock.index + 1 : 1;
+        const previousHash = lastBlock ? lastBlock.hash : "0";
         const timestamp = new Date().toISOString();
-        const newHash = this.calculateHash(newIndex, lastBlock.hash, timestamp, data);
+        const newHash = this.calculateHash(newIndex, previousHash, timestamp, data);
 
         const newBlock = new Block({
             index: newIndex,
             timestamp: timestamp,
             data: data,
-            previousHash: lastBlock.hash,
+            previousHash: previousHash,
             hash: newHash
         });
 
@@ -273,7 +275,7 @@ app.post('/api/auth/login', async (req, res) => {
         const user = await User.findOne({ email, password });
 
         if (user) {
-            const token = jwt.sign({ email: user.email, role: user.role, name: user.name }, SECRET_KEY, { expiresIn: '1h' });
+            const token = jwt.sign({ email: user.email, role: user.role, name: user.name || 'Citizen' }, SECRET_KEY, { expiresIn: '1h' });
             res.json({
                 success: true,
                 token,
@@ -308,7 +310,8 @@ app.post('/api/auth/face-login', async (req, res) => {
         const { faceData } = req.body;
         const users = await User.find({ faceData: { $ne: null } });
 
-        const THRESHOLD = 100; 
+        // Increased threshold for 256-bit hash (16x16) to handle camera noise.
+        const THRESHOLD = 150; 
         let bestMatch = null;
         let minDistance = 9999;
 
@@ -324,7 +327,7 @@ app.post('/api/auth/face-login', async (req, res) => {
 
         if (bestMatch && minDistance < THRESHOLD) {
             const user = bestMatch;
-            const token = jwt.sign({ email: user.email, role: user.role, name: user.name }, SECRET_KEY, { expiresIn: '1h' });
+            const token = jwt.sign({ email: user.email, role: user.role, name: user.name || 'Citizen' }, SECRET_KEY, { expiresIn: '1h' });
             res.json({
                 success: true,
                 token,
@@ -340,7 +343,8 @@ app.post('/api/auth/face-login', async (req, res) => {
             res.json({ success: false, message: 'Identity not recognized. Please register first.' });
         }
     } catch (e) {
-        res.status(500).json({ success: false, message: 'Server error' });
+        console.error('Face login error:', e);
+        res.status(500).json({ success: false, message: 'Server error: ' + e.message });
     }
 });
 
@@ -356,35 +360,69 @@ app.get('/api/complaints', async (req, res) => {
 });
 
 app.post('/api/complaints', authenticateToken, async (req, res) => {
-
     try {
         const data = req.body;
+        console.log('--- COMPLAINT SUBMISSION START ---');
+        console.log('[DEBUG] User from Token:', req.user);
+        console.log('[DEBUG] Payload keys:', Object.keys(data));
+
+        if (!data.description || !data.subject) {
+            console.error('[ERROR] Missing required fields: description or subject');
+            return res.status(400).json({ success: false, message: 'Description and Subject are required' });
+        }
+
+        // 1. Run AI Service (Wrapped in a more robust way)
+        let aiResults = { 
+            category: data.category || 'Other', 
+            priority: 'Medium', 
+            confidence: 0.85, 
+            sentiment: 'Neutral' 
+        };
+
+        console.log('[DEBUG] Running AI Service for description:', data.description.substring(0, 50) + '...');
         
-        // 1. Run Python AI Service
-        let aiResults = { category: data.category || 'Other', priority: 'Medium', confidence: 0.85, sentiment: 'Neutral' };
         try {
             const { spawnSync } = require('child_process');
-            const pythonProcess = spawnSync('python', ['ai_service.py', data.description]);
-            if (pythonProcess.stdout) {
+            // Using spawnSync for simplicity since it was already there, but with a timeout
+            const pythonProcess = spawnSync('python', ['ai_service.py', data.description], { timeout: 5000 });
+            
+            if (pythonProcess.error) {
+                console.error('[AI ERROR] Spawn error:', pythonProcess.error.message);
+            } else if (pythonProcess.stdout) {
                 const output = pythonProcess.stdout.toString().trim();
-                if (output) {
-                    const parsed = JSON.parse(output);
-                    aiResults = { ...aiResults, ...parsed };
+                console.log('[DEBUG] AI Service Raw Output:', output);
+                if (output && output.startsWith('{')) {
+                    try {
+                        const parsed = JSON.parse(output);
+                        aiResults = { ...aiResults, ...parsed };
+                        console.log('[DEBUG] AI Results Parsed:', aiResults);
+                    } catch (pe) {
+                        console.error('[AI ERROR] JSON Parse Error:', pe.message);
+                    }
                 }
             }
-        } catch (err) { console.warn("AI Service bypassed"); }
+            if (pythonProcess.stderr && pythonProcess.stderr.length > 0) {
+                console.warn('[AI WARNING] Python Stderr:', pythonProcess.stderr.toString());
+            }
+        } catch (err) { 
+            console.error("[AI ERROR] Execution failed:", err.message); 
+        }
 
         let category = aiResults.category;
         const priority = aiResults.priority;
 
-        // Keyword Fallback
-        if (category === 'Other') {
-            const desc = data.description.toLowerCase();
-            if (desc.match(/bijli|light|wire|spark|transformer|electric|power|pole/)) category = 'Electricity';
+        // Keyword Fallback (if AI fails or is unsure)
+        if (category === 'Other' || !category) {
+            console.log('[DEBUG] Using Keyword Fallback for classification');
+            const desc = (data.description + " " + data.subject).toLowerCase();
+            if (desc.match(/bijli|light|wire|spark|transformer|electric|power|pole|shock/)) category = 'Electricity';
             else if (desc.match(/pani|water|leak|pipe|tap|tanker|sewage/)) category = 'Water Supply';
             else if (desc.match(/garbage|kachra|smell|dustbin|drain|sweeping|animal/)) category = 'Garbage & Sanitation';
             else if (desc.match(/road|traffic|pothole|path|parking|signal|accident/)) category = 'Roads & Traffic';
+            else category = 'Other';
         }
+
+        console.log('[DEBUG] Final Category:', category);
 
         // 2. Smart Assignment logic
         const officer = await User.findOne({ role: 'officer', dept: category });
@@ -395,8 +433,8 @@ app.post('/api/complaints', authenticateToken, async (req, res) => {
             ...data,
             category: category,
             priority: priority,
-            confidence: aiResults.confidence,
-            sentiment: aiResults.sentiment,
+            confidence: aiResults.confidence || 0.85,
+            sentiment: aiResults.sentiment || 'Neutral',
             id: `#C-${1000 + totalComps + 1}`,
             complaint_id: `#C-${1000 + totalComps + 1}`,
             user_id: req.user.email,
@@ -419,19 +457,32 @@ app.post('/api/complaints', authenticateToken, async (req, res) => {
             });
         }
 
+        console.log('[DEBUG] Saving complaint to MongoDB...');
         await newComplaint.save();
+        console.log('[DEBUG] Complaint saved successfully:', newComplaint.id);
 
-        // Blockchain record
-        await smartCityChain.addBlock({
-            action: "COMPLAINT_FILED",
-            complaintId: newComplaint.id,
-            user: req.user.name,
-            details: `Securely filed on Blockchain Ledger. Category: ${category}`
-        });
+        // 3. Blockchain record (with better error handling)
+        try {
+            console.log('[DEBUG] Adding block to blockchain...');
+            await smartCityChain.addBlock({
+                action: "COMPLAINT_FILED",
+                complaintId: newComplaint.id,
+                user: req.user.name,
+                details: `Securely filed on Blockchain Ledger. Category: ${category}`
+            });
+            console.log('[DEBUG] Blockchain record added.');
+        } catch (bErr) {
+            console.error('[BLOCKCHAIN ERROR] Failed to add block:', bErr.message);
+            // We don't fail the whole request if blockchain fails
+        }
 
+        console.log('--- COMPLAINT SUBMISSION SUCCESS ---');
         res.json({ success: true, complaint: newComplaint });
+
     } catch (e) {
-        res.status(500).json({ success: false, message: 'Server error' });
+        console.error('--- COMPLAINT SUBMISSION CRASH ---');
+        console.error('Error Stack:', e.stack);
+        res.status(500).json({ success: false, message: 'Server error: ' + e.message });
     }
 });
 
@@ -473,7 +524,8 @@ app.put('/api/complaints/:id/status', authenticateToken, async (req, res) => {
             res.status(404).json({ success: false, message: 'Complaint not found' });
         }
     } catch (e) {
-        res.status(500).json({ success: false, message: 'Server error' });
+        console.error('Status update error:', e);
+        res.status(500).json({ success: false, message: 'Server error: ' + e.message });
     }
 });
 

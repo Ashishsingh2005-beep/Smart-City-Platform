@@ -6,7 +6,7 @@
 const App = {
     // --- Backend API Integration ---
     api: {
-        baseUrl: 'https://smart-city-platform-l21n.onrender.com/api',
+        baseUrl: window.location.protocol === 'file:' ? 'http://localhost:3000/api' : '/api',
 
         getHeaders() {
             const headers = { 'Content-Type': 'application/json' };
@@ -29,17 +29,23 @@ const App = {
         },
         async post(endpoint, data) {
             try {
+                console.log(`[API POST] ${endpoint}`, data);
                 const res = await fetch(`${this.baseUrl}${endpoint}`, {
                     method: 'POST',
                     headers: this.getHeaders(),
                     body: JSON.stringify(data)
                 });
                 const result = await res.json();
+                console.log(`[API RESPONSE] ${endpoint}`, result);
                 if (result.message === 'Invalid Token' || result.message === 'Access Denied: No Token') {
+                    console.warn("Session expired or invalid token. Logging out.");
                     App.auth.logout();
                 }
                 return result;
-            } catch (e) { return { success: false, message: "Server connection failed." }; }
+            } catch (e) { 
+                console.error(`[API ERROR] POST ${endpoint}:`, e);
+                return { success: false, message: "Server connection failed. Error: " + e.message }; 
+            }
         },
         async put(endpoint, data) {
             try {
@@ -402,9 +408,14 @@ const App = {
     complaints: {
         create: async (data) => {
             const user = App.store.getCurrentUser();
-            if (!user) return { success: false, message: "Auth required" };
+            if (!user) {
+                console.error("[COMPLAINT] No user found in local storage");
+                return { success: false, message: "Authentication required. Please login again." };
+            }
 
-            // Client-side AI Simulation (Optional: Move to server if Python)
+            console.log("[COMPLAINT] Creating complaint for user:", user.email);
+
+            // Client-side AI Simulation
             const analysis = App.smartAI.analyze(data.description, data.subject);
 
             const payload = {
@@ -420,17 +431,19 @@ const App = {
             };
 
             // Call API
+            console.log("[COMPLAINT] Submitting payload:", payload);
             const result = await App.api.post('/complaints', payload);
-
+            
             if (result.success) {
-                // Update Local Cache for immediate UI reflection
+                console.log("[COMPLAINT] Successfully filed:", result.complaint.id);
+                // Update Local Cache
                 await App.store.loadData();
-
-                // Notification simulation
                 App.notify.send(user.email, 'Complaint Received', `Your complaint ${result.complaint.id} has been logged.`);
                 return { success: true, complaint: result.complaint };
+            } else {
+                console.error("[COMPLAINT] Submission failed:", result.message);
+                return result;
             }
-            return result;
         },
 
         updateStatus: async (id, newStatus, replyText = null) => {
@@ -464,8 +477,8 @@ const App = {
         },
 
         getAll: () => App.store.getComplaints(),
-        getUserComplaints: (email) => App.store.getComplaints().filter(c => c.userId === email),
-        getOfficerComplaints: (name) => App.store.getComplaints().filter(c => c.assignedOfficer === name),
+        getUserComplaints: (email) => App.store.getComplaints().filter(c => c.user_id === email || c.userId === email),
+        getOfficerComplaints: (name) => App.store.getComplaints().filter(c => c.assigned_to === name || c.assignedOfficer === name),
         getStats: () => {
             const all = App.store.getComplaints();
             return {
@@ -605,8 +618,11 @@ const App = {
             };
 
             // Initialize theme
-            if (localStorage.getItem('sc_theme') === 'dark') {
+            const savedTheme = localStorage.getItem('sc_theme') || 'dark';
+            if (savedTheme === 'dark') {
                 document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
             }
             updateThemeUI();
 
