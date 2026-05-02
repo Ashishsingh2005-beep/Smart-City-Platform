@@ -8,7 +8,38 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .portal-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .portal-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--primary-accent);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .portal-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+        .portal-card h3 { margin-bottom: 10px; color: white; }
+        .portal-card p { font-size: 0.85rem; color: var(--text-light); line-height: 1.5; margin-bottom: 15px; }
+    </style>
 </head>
 
 <body>
@@ -21,24 +52,74 @@
     </nav>
 
     <div class="auth-container">
-        <div class="auth-card">
-            <h2 data-i18n="login_title">Welcome Back</h2>
+        <!-- Step 1: Role Selection -->
+        <div id="roleSelection" class="auth-card" style="max-width: 800px; width: 95%;">
+            <h2 style="text-align: center; margin-bottom: 10px;">Select Your Portal</h2>
+            <p style="text-align: center; color: var(--text-light); margin-bottom: 40px;">Choose your entry point to the Smart City ecosystem.</p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px;">
+                <!-- Citizen Card -->
+                <div class="portal-card" onclick="selectRole('citizen')">
+                    <div class="portal-icon" style="background: rgba(6, 182, 212, 0.1); color: #06b6d4;">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <h3>Citizen</h3>
+                    <p>Report issues, track status, and earn city points.</p>
+                    <button class="btn btn-secondary" style="width: 100%; margin-top: 15px;">Enter Portal</button>
+                </div>
+
+                <!-- Officer Card -->
+                <div class="portal-card" onclick="selectRole('officer')">
+                    <div class="portal-icon" style="background: rgba(99, 102, 241, 0.1); color: #6366f1;">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <h3>Officer</h3>
+                    <p>Manage assignments and resolve department issues.</p>
+                    <button class="btn btn-secondary" style="width: 100%; margin-top: 15px;">Enter Portal</button>
+                </div>
+
+                <!-- Admin Card -->
+                <div class="portal-card" onclick="selectRole('admin')">
+                    <div class="portal-icon" style="background: rgba(244, 63, 94, 0.1); color: #f43f5e;">
+                        <i class="fa-solid fa-user-gear"></i>
+                    </div>
+                    <h3>Administrator</h3>
+                    <p>System-wide control, analytics, and governance.</p>
+                    <button class="btn btn-secondary" style="width: 100%; margin-top: 15px;">Enter Portal</button>
+                </div>
+            </div>
+            
+            <div class="auth-footer" style="margin-top: 30px;">
+                <p>New to the platform? <a href="signup.html" style="color: var(--primary-accent); font-weight: 700;">Create Identity</a></p>
+            </div>
+        </div>
+
+        <!-- Step 2: Login Form (Initially Hidden) -->
+        <div id="loginFormCard" class="auth-card" style="display: none;">
+            <button onclick="goBack()" style="background: transparent; border: none; color: var(--text-light); cursor: pointer; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-arrow-left"></i> Back to Portals
+            </button>
+            <div id="selectedPortalHeader" style="text-align: center; margin-bottom: 25px;">
+                <div id="portalIcon" class="portal-icon" style="margin: 0 auto 15px; width: 60px; height: 60px; font-size: 1.5rem;"></div>
+                <h2 id="portalTitle">Login</h2>
+                <p id="portalSubtitle" style="color: var(--text-light); font-size: 0.9rem;">Please enter your credentials to continue.</p>
+            </div>
+
             <p id="errorMsg" class="error-msg"></p>
             <form id="loginForm">
                 <div class="form-group">
                     <label data-i18n="form_email">Email Address</label>
-                    <input type="email" id="email" data-i18n="form_email_placeholder" placeholder="citizen@smartcity.com" required>
+                    <input type="email" id="email" placeholder="email@smartcity.com" required>
                 </div>
                 <div class="form-group">
                     <label data-i18n="form_pass">Password</label>
-                    <input type="password" id="password" data-i18n="form_pass_placeholder" placeholder="••••••••" required>
+                    <input type="password" id="password" placeholder="••••••••" required>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block" data-i18n="login_btn">Login</button>
 
                 <div style="position: relative; margin: 30px 0;">
                     <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-                    <span
-                        style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #0f172a; padding: 0 15px; color: var(--text-light); font-size: 0.85rem; font-weight: 600;">OR</span>
+                    <span style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #0f172a; padding: 0 15px; color: var(--text-light); font-size: 0.85rem; font-weight: 600;">OR</span>
                 </div>
 
                 <button type="button" onclick="startFaceAuth()" class="btn btn-secondary btn-block"
@@ -47,12 +128,9 @@
                     Login with Face ID
                 </button>
             </form>
-            <div class="auth-footer">
-                <p>Don't have an account? <a href="signup.html"
-                        style="color: var(--primary-accent); font-weight: 700;">Sign Up</a></p>
-            </div>
         </div>
     </div>
+
 
     <!-- Face Modal -->
     <div id="faceModal" class="modal">
@@ -167,6 +245,43 @@
     <script src="js/app.js"></script>
     <script>
         App.i18n.init();
+
+        window.selectRole = (role) => {
+            const selection = document.getElementById('roleSelection');
+            const form = document.getElementById('loginFormCard');
+            const title = document.getElementById('portalTitle');
+            const icon = document.getElementById('portalIcon');
+            const emailInput = document.getElementById('email');
+
+            selection.style.display = 'none';
+            form.style.display = 'block';
+
+            if (role === 'admin') {
+                title.innerText = "Admin Portal Login";
+                icon.innerHTML = '<i class="fa-solid fa-user-gear"></i>';
+                icon.style.background = 'rgba(244, 63, 94, 0.1)';
+                icon.style.color = '#f43f5e';
+                emailInput.placeholder = 'admin@smartcity.com';
+            } else if (role === 'officer') {
+                title.innerText = "Officer Portal Login";
+                icon.innerHTML = '<i class="fa-solid fa-user-shield"></i>';
+                icon.style.background = 'rgba(99, 102, 241, 0.1)';
+                icon.style.color = '#6366f1';
+                emailInput.placeholder = 'officer@smartcity.com';
+            } else {
+                title.innerText = "Citizen Portal Login";
+                icon.innerHTML = '<i class="fa-solid fa-user"></i>';
+                icon.style.background = 'rgba(6, 182, 212, 0.1)';
+                icon.style.color = '#06b6d4';
+                emailInput.placeholder = 'citizen@smartcity.com';
+            }
+        };
+
+        window.goBack = () => {
+            document.getElementById('roleSelection').style.display = 'block';
+            document.getElementById('loginFormCard').style.display = 'none';
+        };
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
