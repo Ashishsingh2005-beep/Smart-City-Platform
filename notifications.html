@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications | Smart City</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="bg-animation">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <nav class="navbar" style="background: rgba(15, 23, 42, 0.95); box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);">
+        <div class="logo">
+            <a href="index.html"
+                style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-city"></i> Smart<span>City</span>
+            </a>
+        </div>
+        <div class="auth-buttons">
+            <span style="display: flex; align-items: center; gap: 10px; margin-right: 15px; color: var(--text-muted);">
+                <i class="fa-solid fa-user-circle"></i> <span id="userWelcome">Citizen</span>
+            </span>
+            <a href="#" class="btn btn-secondary">Logout</a>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html"><i class="fa-solid fa-layer-group"></i> Dashboard</a></li>
+                <li><a href="my-complaints.html"><i class="fa-solid fa-list-check"></i> My Complaints</a></li>
+                <li><a href="map-view.html"><i class="fa-solid fa-map"></i> Map View</a></li>
+                <li><a href="notifications.html" class="active"><i class="fa-solid fa-bell"></i> Notifications</a></li>
+                <li><a href="settings.html"><i class="fa-solid fa-gear"></i> Settings</a></li>
+                <li><a href="help.html"><i class="fa-solid fa-circle-question"></i> Help & Support</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="dashboard-header">
+                <div>
+                    <h2>Notifications</h2>
+                    <p style="color: var(--text-muted);">Stay updated with your complaint status.</p>
+                </div>
+                <button class="btn btn-secondary" onclick="alert('All notifications marked as read.')">Mark All
+                    Read</button>
+            </div>
+
+            <div class="recent-complaints">
+                <ul class="notification-list" style="list-style: none; padding: 0;">
+                    <!-- Simulating notifications -->
+                    <li
+                        style="background: rgba(255,255,255,0.05); margin-bottom: 10px; padding: 15px; border-radius: 10px; border-left: 4px solid var(--primary);">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div>
+                                <h4 style="margin-bottom: 5px;">System Welcome</h4>
+                                <p style="font-size: 0.9rem; color: var(--text-muted);">Welcome to the Smart City
+                                    Portal! We are here to help.</p>
+                            </div>
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">Just now</span>
+                        </div>
+                    </li>
+                </ul>
+                <div id="dynamicNotifs"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = App.store.getCurrentUser();
+            if (!user) { window.location.href = 'login.html'; return; }
+            document.getElementById('userWelcome').innerText = user.name;
+
+            const list = document.getElementById('dynamicNotifs');
+            const myComplaints = App.complaints.getUserComplaints(user.email);
+
+            // Generate fake notifications based on complaint history
+            myComplaints.forEach(c => {
+                const item = document.createElement('div');
+                item.style.marginBottom = '10px';
+                item.style.padding = '15px';
+                item.style.borderRadius = '10px';
+                item.style.background = 'rgba(255,255,255,0.05)';
+
+                let icon = '<i class="fa-solid fa-info-circle" style="color: var(--primary);"></i>';
+                let title = "Complaint Created";
+                let msg = `Your complaint <b>${c.id}</b> regarding "${c.subject}" has been successfully logged.`;
+
+                if (c.status === 'resolved') {
+                    item.style.borderLeft = '4px solid #22c55e';
+                    icon = '<i class="fa-solid fa-check-circle" style="color: #22c55e;"></i>';
+                    title = "Complaint Resolved";
+                    msg = `Good news! Your complaint <b>${c.id}</b> has been resolved.`;
+                } else {
+                    item.style.borderLeft = '4px solid #f97316';
+                }
+
+                item.innerHTML = `
+                    <div style="display: flex; gap: 15px; align-items: start;">
+                        <div style="margin-top: 3px;">${icon}</div>
+                        <div style="flex:1;">
+                            <h4 style="margin-bottom: 5px;">${title}</h4>
+                            <p style="font-size: 0.9rem; color: var(--text-muted);">${msg}</p>
+                        </div>
+                         <span style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;">${c.date}</span>
+                    </div>
+                 `;
+                list.prepend(item);
+            });
+        });
+    </script>
+</body>
+
+</html>

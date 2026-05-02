@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Smart City</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Map Styles */
+        #map {
+            z-index: 1;
+            /* Ensure map is below modal */
+        }
+
+        .leaflet-popup-content-wrapper {
+            background: var(--bg-card);
+            color: var(--text-main);
+            border-radius: 12px;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .leaflet-popup-tip {
+            background: var(--bg-card);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="logo">
+            <a href="index.html"
+                style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-city"></i> Smart<span>City</span>
+            </a>
+        </div>
+        <div class="auth-buttons">
+            <span style="display: flex; align-items: center; gap: 10px; margin-right: 15px; color: var(--text-muted);">
+                <i class="fa-solid fa-trophy" style="color: #fbbf24;"></i> <span id="userPoints">0</span> Pts
+            </span>
+            <span style="display: flex; align-items: center; gap: 10px; margin-right: 15px; color: var(--text-muted);">
+                <i class="fa-solid fa-user-circle"></i> <span id="userWelcome" data-i18n="dash_welcome">Citizen</span>
+            </span>
+            <a href="index.html" class="btn btn-secondary">Logout</a>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html" class="active"><i class="fa-solid fa-layer-group"></i> Dashboard</a></li>
+                <li><a href="my-complaints.html"><i class="fa-solid fa-list-check"></i> My Complaints</a></li>
+                <li><a href="map-view.html"><i class="fa-solid fa-map"></i> Map View</a></li>
+                <li><a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a></li>
+                <li><a href="settings.html"><i class="fa-solid fa-gear"></i> Settings</a></li>
+                <li><a href="help.html"><i class="fa-solid fa-circle-question"></i> Help & Support</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="dashboard-header">
+                <div>
+                    <h2 data-i18n="dash_overview">Overview</h2>
+                    <p style="color: var(--text-muted);" data-i18n="dash_subtitle">Here's what's happening with your complaints.</p>
+                </div>
+                <button class="btn btn-primary" id="fileComplaintBtn"><i class="fa-solid fa-plus"></i> <span data-i18n="dash_new_btn">File New Complaint</span></button>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                    </div>
+                    <div>
+                        <h3 id="statTotal">0</h3>
+                        <p style="color: var(--text-muted);" data-i18n="dash_stats_filed">Total Complaints</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+                    <div>
+                        <h3 id="statPending">0</h3>
+                        <p style="color: var(--text-muted);">Pending</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">
+                        <i class="fa-solid fa-check-circle"></i>
+                    </div>
+                    <div>
+                        <h3 id="statResolved">0</h3>
+                        <p style="color: var(--text-muted);">Resolved</p>
+                    </div>
+                </div>
+                <div class="stat-card"
+                    style="border: 1px solid rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.1);">
+                    <div class="stat-icon" style="color: #ef4444; background: rgba(239, 68, 68, 0.2);">
+                        <i class="fa-solid fa-fire"></i>
+                    </div>
+                    <div>
+                        <h3 id="statPriority">0</h3>
+                        <p style="color: var(--text-muted);">High Priority</p>
+                    </div>
+                </div>
+
+                <!-- NEW: IoT Widget -->
+                <div id="iotWidget" style="grid-column: span 4;">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Map View Section -->
+            <div class="recent-complaints" style="margin-bottom: 2rem;">
+                <h3><i class="fa-solid fa-map-location-dot"></i> Live Complaint Map</h3>
+                <div id="map"
+                    style="height: 350px; width: 100%; margin-top: 1rem; border-radius: 12px; border: 1px solid var(--glass-border); position: relative;">
+                    <button id="dashGpsBtn" class="btn btn-primary"
+                        style="position: absolute; bottom: 10px; right: 10px; z-index: 1000; padding: 5px 10px; font-size: 0.8rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        <i class="fa-solid fa-crosshairs"></i> Locate Me
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent Complaints -->
+            <div class="recent-complaints">
+                <h3>My Complaints History</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Subject</th>
+                                <th>Category</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="complaintsTableBody">
+                            <tr>
+                                <td colspan="6" style="text-align:center;">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Complaint Modal -->
+    <div class="modal" id="complaintModal">
+        <div class="modal-content">
+            <i class="fa-solid fa-times close-modal" id="closeModal"></i>
+            <h2><i class="fa-solid fa-robot" style="color: var(--primary);"></i> AI-Assisted Filing</h2>
+            <form id="complaintForm">
+                <div class="form-group">
+                    <label>Description (AI will auto-detect category)</label>
+                    <div style="position: relative;">
+                        <textarea id="compDesc" rows="3"
+                            placeholder="e.g. 'There is a huge pothole causing accidents on Main Street'" required
+                            style="border-color: var(--glass-border); width: 100%; padding-right: 40px;"></textarea>
+                        <button type="button" id="voiceBtn"
+                            style="position: absolute; right: 10px; bottom: 10px; background: var(--primary); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center;"
+                            title="Voice Input">
+                            <i class="fa-solid fa-microphone"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Upload Awareness Image (Optional)</label>
+                    <input type="file" id="compImage" accept="image/*" style="padding: 5px;">
+                </div>
+                <!-- AI Suggestion Box -->
+                <div id="aiSuggestion"
+                    style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--accent); display: none;">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> AI thinks this is: <b>Roads & Traffic</b> (High
+                    Priority)
+                </div>
+
+                <div class="form-group">
+                    <label>Subject</label>
+                    <input type="text" id="compSubject" placeholder="Brief subject" required>
+                </div>
+                    <div class="form-group">
+                        <label>Physical Address / Landmark</label>
+                        <input type="text" id="compLocation" placeholder="e.g. Sector 4, Near Metro Station" required>
+                    </div>
+                    <div class="form-group">
+                        <label>GPS Verification (Optional but Recommended)</label>
+                        <button type="button" id="shareLocationBtn" onclick="requestGPS()" class="btn btn-secondary btn-block" style="background: rgba(6, 182, 212, 0.05); border: 1px dashed var(--primary-accent); color: var(--primary-accent); text-align: left; padding: 12px; display: flex; align-items: center; justify-content: space-between;">
+                            <span><i class="fa-solid fa-location-dot"></i> Share My Precise Location</span>
+                            <span id="gpsStatus" style="font-size: 0.8rem; font-weight: bold; color: var(--text-muted);">NOT LINKED</span>
+                        </button>
+                        <input type="hidden" id="latInput">
+                        <input type="hidden" id="lngInput">
+                    </div>
+                <div class="form-group">
+                    <label>Category (Optional override)</label>
+                    <select id="compCategory">
+                        <option value="">Auto-Detect</option>
+                        <option value="Roads & Traffic">Roads & Traffic</option>
+                        <option value="Garbage & Sanitation">Garbage & Sanitation</option>
+                        <option value="Water Supply">Water Supply</option>
+                        <option value="Electricity">Electricity</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Complaint</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            App.i18n.init();
+            // Check Auth
+            const user = App.store.getCurrentUser();
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            if (user.role === 'admin') {
+                window.location.href = 'admin.html';
+                return;
+            }
+
+            document.getElementById('userWelcome').innerText = user.name;
+            if (document.getElementById('userPoints')) {
+                document.getElementById('userPoints').innerText = user.points || 0;
+            }
+
+            // Load Data
+            const refreshData = async () => {
+                // Ensure fresh data
+                await App.store.loadData();
+                const myComplaints = App.complaints.getUserComplaints(user.email);
+
+                App.ui.renderComplaintsTable(myComplaints, 'complaintsTableBody');
+
+                // Calc Stats for User
+                const stats = {
+                    total: myComplaints.length,
+                    pending: myComplaints.filter(c => c.status === 'pending').length,
+                    resolved: myComplaints.filter(c => c.status === 'resolved').length,
+                    highPriority: myComplaints.filter(c => c.priority === 'High' && c.status !== 'resolved').length
+                };
+                App.ui.updateDashboardStats(stats);
+                App.ui.renderIoTWidgets();
+            };
+
+            refreshData();
+
+            // Modal Logic
+            const modal = document.getElementById('complaintModal');
+            const openBtn = document.getElementById('fileComplaintBtn');
+            const closeBtn = document.getElementById('closeModal');
+
+            window.requestGPS = () => {
+                const btn = document.getElementById('shareLocationBtn');
+                const status = document.getElementById('gpsStatus');
+                
+                status.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> LOCATING...";
+                btn.style.borderColor = "var(--primary-accent)";
+
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            document.getElementById('latInput').value = position.coords.latitude;
+                            document.getElementById('lngInput').value = position.coords.longitude;
+                            status.innerHTML = "<i class='fa-solid fa-check-circle'></i> LINKED";
+                            status.style.color = "#10b981";
+                            btn.style.background = "rgba(16, 185, 129, 0.1)";
+                            btn.style.borderStyle = "solid";
+                            btn.style.borderColor = "#10b981";
+                        },
+                        (err) => {
+                            status.innerHTML = "FAILED";
+                            status.style.color = "#ef4444";
+                            btn.style.borderColor = "#ef4444";
+                            alert("Location access denied. Please enable GPS for precise tracking.");
+                        },
+                        { timeout: 10000, enableHighAccuracy: true }
+                    );
+                } else {
+                    alert("Geolocation not supported by this browser.");
+                }
+            };
+
+            openBtn.addEventListener('click', () => modal.classList.add('active'));
+            closeBtn.addEventListener('click', () => modal.classList.remove('active'));
+
+            document.getElementById('complaintForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.innerHTML = "<i class='fa-solid fa-circle-notch fa-spin'></i> Submitting...";
+                submitBtn.disabled = true;
+
+                const category = document.getElementById('compCategory').value;
+                const subject = document.getElementById('compSubject').value;
+                const locationStr = document.getElementById('compLocation').value;
+                const description = document.getElementById('compDesc').value;
+                const imageFile = document.getElementById('compImage').files[0];
+                
+                // Get pre-captured GPS
+                const latitude = document.getElementById('latInput').value;
+                const longitude = document.getElementById('lngInput').value;
+
+                let imageData = null;
+                if (imageFile) {
+                    const reader = new FileReader();
+                    imageData = await new Promise((resolve) => {
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.readAsDataURL(imageFile);
+                    });
+                }
+
+                const result = await App.complaints.create({ 
+                    category, 
+                    subject, 
+                    location: locationStr, 
+                    description, 
+                    image: imageData,
+                    latitude: latitude ? parseFloat(latitude) : null,
+                    longitude: longitude ? parseFloat(longitude) : null
+                });
+
+                if (result.success) {
+                    alert('Complaint Filed with Secure Digital Identity & GPS Signature!');
+                    modal.classList.remove('active');
+                    e.target.reset();
+                    // Reset GPS UI
+                    document.getElementById('gpsStatus').innerText = "NOT LINKED";
+                    document.getElementById('gpsStatus').style.color = "var(--text-muted)";
+                    document.getElementById('shareLocationBtn').style.background = "rgba(6, 182, 212, 0.05)";
+                    window.location.reload();
+                } else {
+                    alert(result.message);
+                    submitBtn.innerHTML = originalBtnText;
+                    submitBtn.disabled = false;
+                }
+            });
+
+            // Voice-to-Text Logic
+            const voiceBtn = document.getElementById('voiceBtn');
+            const descInput = document.getElementById('compDesc');
+
+            if ('webkitSpeechRecognition' in window) {
+                const recognition = new webkitSpeechRecognition();
+                recognition.continuous = false;
+                recognition.lang = 'en-US';
+
+                recognition.onstart = () => {
+                    voiceBtn.style.animation = "pulse 1.5s infinite";
+                    voiceBtn.style.background = "#ef4444"; // Red when recording
+                    descInput.placeholder = "Listening...";
+                };
+
+                recognition.onend = () => {
+                    voiceBtn.style.animation = "none";
+                    voiceBtn.style.background = "var(--primary)";
+                    descInput.placeholder = "Describe the issue in detail...";
+                };
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    descInput.value += (descInput.value ? ' ' : '') + transcript;
+                };
+
+                voiceBtn.addEventListener('click', () => {
+                    recognition.start();
+                });
+            } else {
+                voiceBtn.style.display = 'none'; // Hide if not supported
+            }
+
+            // Init Map (Leaflet)
+            let map;
+            try {
+                map = L.map('map').setView([28.6139, 77.2090], 12);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors',
+                }).addTo(map);
+
+                // Dashboard GPS Logic
+                const gpsBtn = document.getElementById('dashGpsBtn');
+                if (gpsBtn && map) {
+                    gpsBtn.addEventListener('click', () => {
+                        gpsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                        if (navigator.geolocation) {
+                            navigator.geolocation.getCurrentPosition(
+                                (position) => {
+                                    const lat = position.coords.latitude;
+                                    const lng = position.coords.longitude;
+                                    map.flyTo([lat, lng], 15);
+
+                                    const userIcon = L.divIcon({
+                                        className: 'user-location-marker',
+                                        html: '<div style="background-color: #3b82f6; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.3);"></div>',
+                                        iconSize: [16, 16]
+                                    });
+                                    L.marker([lat, lng], { icon: userIcon }).addTo(map).bindPopup('<b>You</b>').openPopup();
+                                    gpsBtn.innerHTML = '<i class="fa-solid fa-location-arrow"></i>';
+                                },
+                                (err) => {
+                                    alert("Location access denied.");
+                                    gpsBtn.innerHTML = '<i class="fa-solid fa-crosshairs"></i> Locate Me';
+                                }
+                            );
+                        } else {
+                            alert("GPS not supported");
+                        }
+                    });
+                }
+
+                // Add markers
+                setTimeout(() => {
+                    const myComplaints = App.complaints.getUserComplaints(user.email);
+                    myComplaints.forEach((c) => {
+                        const sadhash = c.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+                        const offsetLat = (sadhash % 100 - 50) * 0.001;
+                        const offsetLng = (sadhash % 80 - 40) * 0.001;
+                        L.marker([28.6139 + offsetLat, 77.2090 + offsetLng]).addTo(map)
+                            .bindPopup(`<b>${c.subject}</b><br>Status: ${c.status}`);
+                    });
+                }, 500);
+
+            } catch (e) {
+                console.error("Map init failed", e);
+                document.getElementById('map').innerText = "Map could not load.";
+            }
+        });
+    </script>
+</body>
+
+</html>

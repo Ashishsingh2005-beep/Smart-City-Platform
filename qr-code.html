@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code | Smart City</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .qr-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .qr-card {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow-glow);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        #qrcode {
+            margin: 2rem auto;
+            display: flex;
+            justify-content: center;
+        }
+
+        .print-btn {
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <a href="index.html"
+                style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-city"></i> Smart<span>City</span>
+            </a>
+        </div>
+        <div class="auth-buttons">
+            <a href="index.html" class="btn btn-secondary">Back to Home</a>
+        </div>
+    </nav>
+
+    <div class="qr-container">
+        <div class="qr-card">
+            <h2 style="color: var(--primary); margin-bottom: 1rem;">Scan to Report</h2>
+            <p style="color: var(--text-muted);">Scan this QR code to instantly file a complaint via our web porta.</p>
+
+            <div id="qrcode"></div>
+
+            <p style="font-size: 0.9rem; color: var(--text-muted);">Citizen Complaint Portal</p>
+
+            <button onclick="window.print()" class="btn btn-primary print-btn"><i class="fa-solid fa-print"></i> Print
+                Poster</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        // Generate QR pointing to the signup page (current URL base + signup.html)
+        const targetUrl = window.location.href.replace('qr-code.html', 'signup.html');
+
+        new QRCode(document.getElementById("qrcode"), {
+            text: targetUrl,
+            width: 200,
+            height: 200,
+            colorDark: "#0f172a",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    </script>
+</body>
+
+</html>

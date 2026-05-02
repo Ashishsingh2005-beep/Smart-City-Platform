@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings | Smart City</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="bg-animation">
+        <div class="blob blob-2"></div>
+        <div class="blob blob-1"></div>
+    </div>
+
+    <nav class="navbar" style="background: rgba(15, 23, 42, 0.95); box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);">
+        <div class="logo">
+            <a href="index.html"
+                style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-city"></i> Smart<span>City</span>
+            </a>
+        </div>
+        <div class="auth-buttons">
+            <span style="display: flex; align-items: center; gap: 10px; margin-right: 15px; color: var(--text-muted);">
+                <i class="fa-solid fa-user-circle"></i> <span id="userWelcome">Citizen</span>
+            </span>
+            <a href="#" class="btn btn-secondary">Logout</a>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html"><i class="fa-solid fa-layer-group"></i> Dashboard</a></li>
+                <li><a href="my-complaints.html"><i class="fa-solid fa-list-check"></i> My Complaints</a></li>
+                <li><a href="map-view.html"><i class="fa-solid fa-map"></i> Map View</a></li>
+                <li><a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a></li>
+                <li><a href="settings.html" class="active"><i class="fa-solid fa-gear"></i> Settings</a></li>
+                <li><a href="help.html"><i class="fa-solid fa-circle-question"></i> Help & Support</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="dashboard-header">
+                <div>
+                    <h2>Account Settings</h2>
+                    <p style="color: var(--text-muted);">Manage your profile and preferences.</p>
+                </div>
+            </div>
+
+            <div class="recent-complaints" style="max-width: 600px;">
+                <form id="profileForm">
+                    <h3 style="margin-bottom: 1.5rem;">Profile Information</h3>
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="settingsName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="settingsEmail" disabled style="opacity: 0.7; cursor: not-allowed;">
+                        <small style="color: var(--text-muted);">Email cannot be changed.</small>
+                    </div>
+
+                    <h3 style="margin-top: 2rem; margin-bottom: 1.5rem;">Security</h3>
+                    <div class="form-group">
+                        <label>New Password</label>
+                        <input type="password" id="settingsPass" placeholder="Leave blank to keep current">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Save Changes</button>
+                    <button type="button" class="btn btn-secondary"
+                        onclick="alert('Account deletion is restricted by admin.')"
+                        style="margin-top: 1rem; margin-left: 10px; background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444;">Delete
+                        Account</button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = App.store.getCurrentUser();
+            if (!user) { window.location.href = 'login.html'; return; }
+            document.getElementById('userWelcome').innerText = user.name;
+
+            // Prefill
+            document.getElementById('settingsName').value = user.name;
+            document.getElementById('settingsEmail').value = user.email;
+
+            document.getElementById('profileForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const newName = document.getElementById('settingsName').value;
+                const newPass = document.getElementById('settingsPass').value;
+
+                // Update Local User Object
+                user.name = newName;
+                if (newPass) user.password = newPass; // In real app, verify old pass first
+
+                App.store.setCurrentUser(user);
+
+                // Update in full users list
+                const users = App.store.getUsers();
+                const idx = users.findIndex(u => u.email === user.email);
+                if (idx !== -1) {
+                    users[idx].name = newName;
+                    if (newPass) users[idx].password = newPass;
+                    App.store.setUsers(users);
+                }
+
+                alert('Profile updated successfully!');
+                location.reload();
+            });
+        });
+    </script>
+</body>
+
+</html>

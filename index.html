@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart City | Complaint Management System</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <!-- Video Background Container -->
+    <div class="video-bg-container">
+        <video autoplay muted loop playsinline
+            poster="https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?q=80&w=2070&auto=format&fit=crop">
+            <source
+                src="https://assets.mixkit.co/videos/preview/mixkit-modern-city-at-night-with-lights-and-traffic-27854-large.mp4"
+                type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="video-overlay"></div>
+    </div>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="logo">
+            <i class="fa-solid fa-shield-halved" style="color: var(--primary-accent);"></i> Smart<span>City</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#" class="active" data-i18n="nav_platform">Platform</a></li>
+            <li><a href="transparency.html" data-i18n="nav_ledger">Blockchain Ledger</a></li>
+            <li><a href="#how-it-works">How it Works</a></li>
+            <li><a href="#transparency">Analytics</a></li>
+        </ul>
+        <div class="auth-buttons" style="display:flex; align-items:center; gap:15px;">
+            <div class="lang-selector">
+                <select onchange="App.i18n.setLang(this.value)"
+                    style="padding: 8px 16px; border-radius: 12px; background: rgba(15, 23, 42, 0.8); color: white; border: 1px solid rgba(255, 255, 255, 0.2); font-size: 0.9rem; font-weight: 600; outline: none; backdrop-filter: blur(20px); cursor: pointer; display: flex; align-items: center;">
+                    <option value="en" style="background: #0f172a; color: white;">🇺🇸 English</option>
+                    <option value="es" style="background: #0f172a; color: white;">🇪🇸 Español</option>
+                    <option value="hi" style="background: #0f172a; color: white;">🇮🇳 हिन्दी</option>
+                </select>
+            </div>
+            <a href="login.html" class="btn btn-secondary" style="border:none;" data-i18n="nav_signin">Sign In</a>
+            <a href="signup.html" class="btn btn-primary" data-i18n="nav_signup">Join Platform</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="badge"
+                style="display: inline-block; padding: 6px 16px; background: rgba(6, 182, 212, 0.2); color: var(--primary-accent); border-radius: 50px; font-size: 0.85rem; font-weight: 700; margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: 1px; border: 1px solid rgba(6, 182, 212, 0.3);">
+                <i class="fa-solid fa-sparkles"></i> AI-Powered Urban Infrastructure
+            </div>
+            <h1 style="color: white; text-shadow: 0 4px 20px rgba(0,0,0,0.5);" data-i18n="hero_title">Pioneering the Future of <br><span
+                    style="background: linear-gradient(to right, #06b6d4, #8b5cf6); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.3));">Smart
+                    Living</span></h1>
+            <p style="color: rgba(255,255,255,0.9); font-size: 1.3rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5);" data-i18n="hero_subtitle">A
+                vibrant, resilient, and unified infrastructure for citizen feedback and rapid response coordination.
+                Your city, upgraded.</p>
+            <div class="cta-group">
+                <a href="signup.html" class="btn btn-primary btn-lg">Get Started <i
+                        class="fa-solid fa-arrow-right"></i></a>
+                <button id="trackBtn" class="btn btn-secondary btn-lg">Track Complaint</button>
+            </div>
+
+            <!-- Stats in Hero -->
+            <div class="stats" style="margin-top: 5rem;">
+                <div class="stat-item">
+                    <h3 style="color: white; text-shadow: 0 0 15px var(--primary-accent);">50k+</h3>
+                    <p style="color: var(--primary-accent);">Active Citizens</p>
+                </div>
+                <div class="stat-item">
+                    <h3 style="color: white; text-shadow: 0 0 15px var(--secondary);">99.9%</h3>
+                    <p style="color: var(--secondary);">Resolution Rate</p>
+                </div>
+                <div class="stat-item">
+                    <h3 style="color: white; text-shadow: 0 0 15px var(--accent);">Instant</h3>
+                    <p style="color: var(--accent);">Response</p>
+                </div>
+            </div>
+        </div>
+        <div class="hero-image">
+            <img src="https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?q=80&w=2069&auto=format&fit=crop"
+                alt="Smart City Technology">
+            <div class="floating-card card-1">
+                <i class="fa-solid fa-circle-check"></i>
+                <div>
+                    <h4>Issue Resolved</h4>
+                    <p>Road repaired in 4h</p>
+                </div>
+            </div>
+            <div class="floating-card card-2">
+                <i class="fa-solid fa-bolt" style="color: var(--warning);"></i>
+                <div>
+                    <h4>Priority Action</h4>
+                    <p>AI-Powered Dispatch</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trust Banner -->
+    <section class="trust-banner"
+        style="background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(10px); padding: 4rem 5%; border-top: 1px solid rgba(255,255,255,0.1); border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center;">
+        <p
+            style="color: var(--primary-accent); font-weight: 700; text-transform: uppercase; letter-spacing: 3px; font-size: 0.8rem; margin-bottom: 2.5rem; text-shadow: 0 0 10px rgba(6, 182, 212, 0.5);">
+            Strategic Urban Partners</p>
+        <div
+            style="display: flex; justify-content: center; align-items: center; gap: 5rem; flex-wrap: wrap; opacity: 0.9;">
+            <span
+                style="font-size: 1.6rem; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px;"><i
+                    class="fa-solid fa-city" style="color: var(--neon-blue);"></i> MetroGov</span>
+            <span
+                style="font-size: 1.6rem; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px;"><i
+                    class="fa-solid fa-building-columns" style="color: var(--secondary);"></i> UrbanLink</span>
+            <span
+                style="font-size: 1.6rem; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px;"><i
+                    class="fa-solid fa-landmark" style="color: var(--accent);"></i> CivilSoft</span>
+            <span
+                style="font-size: 1.6rem; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px;"><i
+                    class="fa-solid fa-bridge" style="color: var(--success);"></i> InfraNet</span>
+        </div>
+    </section>
+
+    <!-- Categories Section -->
+    <section id="impact" class="features" style="background: transparent;">
+        <div class="section-header">
+            <h2>Comprehensive <span>Service Categories</span></h2>
+            <p>We provide specialized response teams for every facet of urban maintenance.</p>
+        </div>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="icon-box"><i class="fa-solid fa-road"></i></div>
+                <h3>Infrastructure</h3>
+                <p>Report potholes, broken streetlights, or damaged public property for immediate repair.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon-box" style="background: rgba(16, 185, 129, 0.1); color: var(--success);"><i
+                        class="fa-solid fa-droplet"></i></div>
+                <h3>Public Utilities</h3>
+                <p>Water leakage, sanitation issues, or electricity outages handled by city technicians.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon-box" style="background: rgba(245, 158, 11, 0.1); color: var(--warning);"><i
+                        class="fa-solid fa-shield-heart"></i></div>
+                <h3>Public Safety</h3>
+                <p>Emergency hazards, suspicious activity, or traffic concerns reported directly to security.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon-box" style="background: rgba(244, 63, 94, 0.1); color: var(--accent);"><i
+                        class="fa-solid fa-leaf"></i></div>
+                <h3>Environment</h3>
+                <p>Waste management, park maintenance, and pollution monitoring for a greener city.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- How it Works -->
+    <section id="how-it-works" class="features" style="background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(20px);">
+        <div class="section-header">
+            <h2 style="color: white;">The <span>Digital Evolution</span></h2>
+            <p style="color: rgba(255,255,255,0.7);">Seamless transparency from submission to resolution.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4rem; text-align: center;">
+            <div class="step">
+                <div class="step-num">01</div>
+                <h3>Citizen Reporting</h3>
+                <p>Pinpoint urban issues with sub-meter accuracy and high-resolution media evidence.</p>
+            </div>
+            <div class="step">
+                <div class="step-num">02</div>
+                <h3>AI Stratification</h3>
+                <p>Neural networks prioritize and dispatch the exact response team needed in seconds.</p>
+            </div>
+            <div class="step">
+                <div class="step-num">03</div>
+                <h3>Verified Resolution</h3>
+                <p>Track live team movement and receive cryptographic proof of completion.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Transparency Dashboard -->
+    <section id="transparency" class="features">
+        <h2 class="section-header">Public Transparency Dashboard</h2>
+        <div class="feature-grid">
+            <div class="feature-card" style="text-align: center;">
+                <h3><i class="fa-solid fa-chart-pie" style="color: var(--primary);"></i> Complaint Categories</h3>
+                <div style="height: 250px; margin-top: 15px;">
+                    <canvas id="publicPie"></canvas>
+                </div>
+            </div>
+            <div class="feature-card" style="text-align: center;">
+                <h3><i class="fa-solid fa-chart-line" style="color: var(--secondary);"></i> Weekly Resolutions</h3>
+                <div style="height: 250px; margin-top: 15px;">
+                    <canvas id="publicLine"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer
+        style="background: var(--primary); color: white; padding: 6rem 5% 3rem; position: relative; overflow: hidden;">
+        <!-- Background light effect -->
+        <div
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 10% 10%, rgba(37, 99, 235, 0.1) 0%, transparent 50%);">
+        </div>
+
+        <div class="footer-content"
+            style="display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 4rem; max-width: var(--max-width); margin: 0 auto; position: relative; z-index: 1;">
+            <div class="footer-logo-block">
+                <div class="logo" style="margin-bottom: 1.5rem; filter: brightness(0) invert(1);">
+                    <i class="fa-solid fa-shield-halved"></i> Smart<span>City</span>
+                </div>
+                <p style="color: var(--text-light); margin-bottom: 2rem; font-size: 0.95rem; line-height: 1.8;">Leading
+                    the evolution of urban living through community-driven digital platforms and transparent governance.
+                </p>
+                <div class="social-links" style="display: flex; gap: 1rem;">
+                    <a href="#"
+                        style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; color: white; transition: var(--transition);"><i
+                            class="fa-brands fa-twitter"></i></a>
+                    <a href="#"
+                        style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; color: white; transition: var(--transition);"><i
+                            class="fa-brands fa-linkedin"></i></a>
+                    <a href="#"
+                        style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; color: white; transition: var(--transition);"><i
+                            class="fa-brands fa-github"></i></a>
+                </div>
+            </div>
+            <div class="footer-links">
+                <h4 style="font-size: 1.1rem; margin-bottom: 2rem;">Platform</h4>
+                <ul style="list-style: none; display: flex; flex-direction: column; gap: 1rem;">
+                    <li><a href="#"
+                            style="color: var(--text-light); text-decoration: none; font-size: 0.9rem;">Overview</a>
+                    </li>
+                    <li><a href="#"
+                            style="color: var(--text-light); text-decoration: none; font-size: 0.9rem;">Infrastructure</a>
+                    </li>
+                    <li><a href="#" style="color: var(--text-light); text-decoration: none; font-size: 0.9rem;">Public
+                            Services</a></li>
+                    <li><a href="#" style="color: var(--text-light); text-decoration: none; font-size: 0.9rem;">Case
+                            Studies</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4 style="font-size: 1.1rem; margin-bottom: 2rem;">Resources</h4>
+                <ul style="list-style: none; display: flex; flex-direction: column; gap: 1rem;">
+                    <li><a href="#"
+                            style="color: var(--text-light); text-decoration: none; font-size: 0.9rem;">Documentation</a>
+                    </li>
+                    <li><a href="#" style="color: var(--text-light); text-decoration: none; font-size: 0.9rem;">API
+                            Access</a></li>
+                    <li><a href="#" style="color: var(--text-light); text-decoration: none; font-size: 0.9rem;">Legal &
+                            Privacy</a></li>
+                    <li><a href="#" style="color: var(--text-light); text-decoration: none; font-size: 0.9rem;">Support
+                            Portal</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4 style="font-size: 1.1rem; margin-bottom: 2rem;">Newsletter</h4>
+                <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;">Join 5,000+ urban
+                    planners and citizens.</p>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="email" placeholder="Email"
+                        style="padding: 0.8rem; border-radius: 8px; border: none; background: rgba(255,255,255,0.1); color: white; width: 100%;">
+                    <button class="btn btn-primary" style="padding: 0.8rem;"><i
+                            class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom"
+            style="margin-top: 6rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; color: var(--text-light); font-size: 0.85rem;">
+            <p>&copy; 2026 Smart City Digital. Built for the future of urban excellence.</p>
+        </div>
+    </footer>
+
+    <!-- Track Modal (Restored) -->
+    <div class="modal" id="trackModal">
+        <div class="modal-content" style="border-radius: var(--radius-lg); padding: 3rem;">
+            <i class="fa-solid fa-times close-modal" id="closeTrackModal"></i>
+            <h2 style="font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem;">Track Status</h2>
+            <p style="color: var(--text-muted); margin-bottom: 2rem;">Enter your resolution ID to see the real-time
+                progress.</p>
+            <form id="trackForm">
+                <div class="form-group">
+                    <label style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem; display: block;">Complaint
+                        ID</label>
+                    <input type="text" id="trackId" placeholder="#C-1234" required
+                        style="width:100%; padding:1rem; border:2px solid #e2e8f0; border-radius:12px; margin-bottom:1.5rem; font-size: 1rem;">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%; padding: 1rem;">Check Status</button>
+            </form>
+            <div id="trackResult"
+                style="margin-top: 1.5rem; display: none; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0; background: #f8fafc;">
+                <!-- Result -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            App.i18n.init();
+            setTimeout(() => {
+                // Get real complaints from app (though they might be empty if not logged in - check local storage directly)
+                const mockComplaints = [
+                    { category: 'Roads & Traffic' }, { category: 'Water Supply' }, { category: 'Roads & Traffic' },
+                    { category: 'Electricity' }, { category: 'Garbage & Sanitation' }
+                ];
+
+                const complaints = App.store.getComplaints();
+                const dataSrc = complaints.length > 0 ? complaints : mockComplaints;
+
+                // DATA PREP
+                const cats = {};
+                dataSrc.forEach(c => {
+                    const k = c.category || 'Other';
+                    cats[k] = (cats[k] || 0) + 1;
+                });
+
+                // PIE CHART
+                const ctxPie = document.getElementById('publicPie').getContext('2d');
+                new Chart(ctxPie, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(cats),
+                        datasets: [{
+                            data: Object.values(cats),
+                            backgroundColor: ['#06b6d4', '#6366f1', '#8b5cf6', '#f43f5e', '#10b981'],
+                            borderColor: 'transparent',
+                            hoverOffset: 15
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { family: 'Outfit', size: 12 } } } },
+                        cutout: '70%'
+                    }
+                });
+
+                // LINE CHART (Mock Weekly Data)
+                const ctxLine = document.getElementById('publicLine').getContext('2d');
+                new Chart(ctxLine, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        datasets: [{
+                            label: 'Resolved Issues',
+                            data: [12, 19, 3, 5, 2, 3, 10], // Mock data for public view
+                            backgroundColor: '#4f46e5',
+                            borderRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#cbd5e1', font: { family: 'Outfit' } } },
+                            x: { grid: { display: false }, ticks: { color: '#cbd5e1', font: { family: 'Outfit' } } }
+                        }
+                    }
+                });
+            }, 500);
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navbar = document.getElementById('navbar');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            });
+
+            const trackModal = document.getElementById('trackModal');
+            const trackBtn = document.getElementById('trackBtn');
+            const closeTrackModal = document.getElementById('closeTrackModal');
+
+            if (trackBtn) {
+                trackBtn.addEventListener('click', () => trackModal.classList.add('active'));
+                closeTrackModal.addEventListener('click', () => trackModal.classList.remove('active'));
+                trackModal.addEventListener('click', (e) => {
+                    if (e.target === trackModal) trackModal.classList.remove('active');
+                });
+
+                document.getElementById('trackForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const id = document.getElementById('trackId').value;
+                    const complaints = App.store.getComplaints(); // Using App logic from app.js
+                    const found = complaints.find(c => c.id === id);
+
+                    const resDiv = document.getElementById('trackResult');
+                    resDiv.style.display = 'block';
+
+                    if (found) {
+                        resDiv.innerHTML = `
+                            <p style="color: var(--primary-accent); font-weight: bold; font-size: 1.1rem; margin-bottom: 0.5rem;">${found.subject}</p>
+                            <p style="font-size: 0.95rem;">Status: <span class="status-badge status-${found.status}" style="margin-left: 10px;">${found.status.toUpperCase()}</span></p>
+                            <div style="margin-top: 1rem; height: 4px; background: #e2e8f0; border-radius: 2px;">
+                                <div style="width: ${found.status === 'resolved' ? '100%' : '50%'}; height: 100%; background: var(--primary-accent); border-radius: 2px;"></div>
+                            </div>
+                            <p style="font-size: 0.8rem; color: var(--text-light); margin-top: 0.5rem;">Estimated Completion: ${found.date}</p>
+                         `;
+                    } else {
+                        resDiv.innerHTML = `<p style="color: #ef4444; font-weight: 600;">System Error: Complaint ID not found.</p>`;
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

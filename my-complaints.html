@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Complaints | Smart City</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <a href="index.html"
+                style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-city"></i> Smart<span>City</span>
+            </a>
+        </div>
+        <div class="auth-buttons">
+            <span style="display: flex; align-items: center; gap: 10px; margin-right: 15px; color: var(--text-muted);">
+                <i class="fa-solid fa-user-circle"></i> <span id="userWelcome">Citizen</span>
+            </span>
+            <a href="#" class="btn btn-secondary">Logout</a>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html"><i class="fa-solid fa-layer-group"></i> Dashboard</a></li>
+                <li><a href="my-complaints.html" class="active"><i class="fa-solid fa-list-check"></i> My Complaints</a>
+                </li>
+                <li><a href="map-view.html"><i class="fa-solid fa-map"></i> Map View</a></li>
+                <li><a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a></li>
+                <li><a href="settings.html"><i class="fa-solid fa-gear"></i> Settings</a></li>
+                <li><a href="help.html"><i class="fa-solid fa-circle-question"></i> Help & Support</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="dashboard-header">
+                <div>
+                    <h2>My Complaints</h2>
+                    <p style="color: var(--text-muted);">Detailed history of all your reported issues.</p>
+                </div>
+            </div>
+
+            <div class="recent-complaints">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Subject</th>
+                                <th>Category</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>ETA</th>
+                                <th>History</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="complaintsTableBody">
+                            <tr>
+                                <td colspan="7" style="text-align:center;">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = App.store.getCurrentUser();
+            if (!user) { window.location.href = 'login.html'; return; }
+            document.getElementById('userWelcome').innerText = user.name;
+
+            await App.store.loadData(); // Fetch latest data
+            const myComplaints = App.complaints.getUserComplaints(user.email);
+            const tbody = document.getElementById('complaintsTableBody');
+
+            if (myComplaints.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 2rem;">No complaints found.</td></tr>`;
+            } else {
+                tbody.innerHTML = '';
+                myComplaints.forEach(c => {
+                    const statusClass = `status-${c.status}`;
+                    const priorityClass = c.priority === 'High' ? 'color: #ef4444; font-weight:bold;' : (c.priority === 'Medium' ? 'color: #f97316;' : 'color: #16a34a;');
+
+                    let historyHtml = '<small style="color:var(--text-muted);">No history</small>';
+                    if (c.history && c.history.length > 0) {
+                        historyHtml = c.history.map(h =>
+                            `<div style="font-size:0.75rem; border-left:2px solid var(--primary); padding-left:5px; margin-bottom:2px;">
+                                    <b>${h.action}</b>: ${h.details} <span style="opacity:0.7">(${new Date(h.timestamp).toLocaleDateString()})</span>
+                                </div>`
+                        ).join('');
+                    }
+
+                    const row = `
+                            <tr>
+                                <td>${c.id}</td>
+                                <td>${c.subject} <br><span style="font-size:0.75rem; color:var(--text-muted);"><i class="fa-solid fa-location-dot"></i> ${c.location}</span></td>
+                                <td>${c.category}</td>
+                                <td style="${priorityClass}">${c.priority}</td>
+                                <td><span class="status-badge ${statusClass}">${c.status.toUpperCase()}</span></td>
+                                <td>${c.eta || '-'}</td>
+                                <td>${historyHtml}</td>
+                                <td>${c.date}</td>
+                            </tr>
+                        `;
+                    tbody.innerHTML += row;
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

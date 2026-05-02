@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Smart City</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+
+<body class="dark-mode">
+    <!-- Normalize Navbar for Dashboard -->
+    <nav class="navbar">
+        <div class="logo">
+            <a href="index.html" class="logo">
+                <i class="fa-solid fa-city"></i> Smart<span>City</span>
+                <span class="status-badge status-open"
+                    style="font-size: 0.8rem; padding: 2px 8px; margin-left:8px;">ADMIN</span>
+            </a>
+        </div>
+        <div class="auth-buttons">
+            <span style="display: flex; align-items: center; gap: 10px; margin-right: 15px; color: var(--text-muted);">
+                <i class="fa-solid fa-user-shield"></i> <span id="adminName">Admin</span>
+            </span>
+            <a href="index.html" class="btn btn-secondary">Logout</a>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="#" class="active"><i class="fa-solid fa-gauge-high"></i> Dashboard</a></li>
+                <li><a href="#"><i class="fa-solid fa-users"></i> Users</a></li>
+                <li><a href="#"><i class="fa-solid fa-list-check"></i> All Complaints</a></li>
+                <li><a href="#logs"><i class="fa-solid fa-scroll"></i> Activity Logs</a></li>
+                <li><a href="#"><i class="fa-solid fa-gear"></i> System Settings</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="dashboard-header">
+                <div>
+                    <h2>Admin Overview</h2>
+                    <p style="color: var(--text-muted);">System status and complaints overview.</p>
+                </div>
+                <button class="btn btn-secondary"><i class="fa-solid fa-download"></i> Export Report</button>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                    </div>
+                    <div>
+                        <h3 id="statTotal">0</h3>
+                        <p style="color: var(--text-muted);">Total Complaints</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+                    <div>
+                        <h3 id="statPending">0</h3>
+                        <p style="color: var(--text-muted);">Pending Review</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fa-solid fa-check-circle"></i>
+                    </div>
+                    <div>
+                        <h3 id="statResolved">0</h3>
+                        <p style="color: var(--text-muted);">Resolved Issues</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div>
+                        <h3 id="statOpen">0</h3>
+                        <p style="color: var(--text-muted);">Open Issues</p>
+                    </div>
+                </div>
+                <div class="stat-card" style="border: 1px solid var(--danger);">
+                    <div class="stat-icon" style="color: var(--danger); background: rgba(239, 68, 68, 0.1);">
+                        <i class="fa-solid fa-fire"></i>
+                    </div>
+                    <div>
+                        <h3 id="statPriority">0</h3>
+                        <p style="color: #991b1b;">Critical / High</p>
+                    </div>
+                </div>
+
+                <!-- Server Load Chart -->
+                <div class="stat-card" style="grid-column: span 2;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="color: var(--text-muted); font-size: 0.9rem;">Real-time Server Load</h4>
+                        <span id="serverLoadText" style="color: var(--primary-accent); font-weight: bold;">0%</span>
+                    </div>
+                    <div
+                        style="background: rgba(0,0,0,0.2); height: 150px; border-radius: 8px; position: relative; overflow: hidden; border: 1px solid var(--glass-border);">
+                        <canvas id="serverLoadChart" style="width: 100%; height: 100%;"></canvas>
+                    </div>
+                </div>
+
+                <!-- NEW: Analytics Pie Chart -->
+                <div class="stat-card" style="grid-column: span 2;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="color: var(--text-muted); font-size: 0.9rem;">Complaints by Category</h4>
+                    </div>
+                    <div style="height: 200px; display: flex; justify-content: center;">
+                        <canvas id="analyticsChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- NEW: Monthly Trends Line Chart -->
+                <div class="stat-card" style="grid-column: span 4;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="color: var(--text-muted); font-size: 0.9rem;">Monthly Complaint Trends</h4>
+                    </div>
+                    <div style="height: 250px;">
+                        <canvas id="trendsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Complaints -->
+            <div class="recent-complaints">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                    <h3>All Complaints</h3>
+                    <div class="search-box" style="display: flex; gap: 10px; align-items: center;">
+                        <!-- Filters -->
+                        <select id="filterCategory"
+                            style="padding: 8px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; outline: none;">
+                            <option value="" style="background: #0f172a;">All Categories</option>
+                            <option value="Roads & Traffic" style="background: #0f172a;">Roads & Traffic</option>
+                            <option value="Garbage & Sanitation" style="background: #0f172a;">Garbage & Sanitation
+                            </option>
+                            <option value="Water Supply" style="background: #0f172a;">Water Supply</option>
+                            <option value="Electricity" style="background: #0f172a;">Electricity</option>
+                            <option value="Other" style="background: #0f172a;">Other</option>
+                        </select>
+                        <select id="filterPriority"
+                            style="padding: 8px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; outline: none;">
+                            <option value="" style="background: #0f172a;">All Priorities</option>
+                            <option value="High" style="background: #0f172a;">High</option>
+                            <option value="Medium" style="background: #0f172a;">Medium</option>
+                            <option value="Low" style="background: #0f172a;">Low</option>
+                        </select>
+
+                        <input type="text" id="searchInput" placeholder="Search ID or Name"
+                            style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; outline: none; margin-bottom: 0;">
+                        <button class="btn btn-primary" style="padding: 8px 15px;" id="searchBtn">Search</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Subject</th>
+                                <th>Category</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>SLA</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminComplaintsBody">
+                            <tr>
+                                <td colspan="8" style="text-align:center;">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Officer Assign Modal -->
+            <div class="modal" id="assignModal">
+                <div class="modal-content">
+                    <i class="fa-solid fa-times close-modal"
+                        onclick="document.getElementById('assignModal').classList.remove('active')"></i>
+                    <h2>Assign Officer</h2>
+                    <p>Select an officer to handle complaint <b id="assignIdDisplay" style="color:var(--primary)"></b>:
+                    </p>
+                    <select id="officerSelect"
+                        style="width: 100%; padding: 10px; margin-top: 15px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 6px;">
+                        <!-- Populated by JS -->
+                    </select>
+                    <input type="hidden" id="assignId">
+                    <button onclick="submitAssignment()" class="btn btn-primary"
+                        style="margin-top: 15px; width: 100%;">Confirm Assignment</button>
+                </div>
+            </div>
+
+            <!-- System Logs Section -->
+            <div id="logs" class="recent-complaints" style="margin-top: 2rem;">
+                <h3><i class="fa-solid fa-list-ul"></i> Live System Activity</h3>
+                <div
+                    style="max-height: 250px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--glass-border);">
+                    <ul id="activityLogList" style="list-style: none; padding: 0;">
+                        <li style="color: var(--text-muted); text-align: center;">Waiting for activity...</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Blockchain Ledger Section -->
+            <div class="recent-complaints" style="margin-top: 2rem;">
+                <h3><i class="fa-solid fa-link"></i> Transparency Ledger (Blockchain)</h3>
+                <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1rem;">Immutable record of all
+                    complaint actions.</p>
+                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                    <table style="font-family: monospace;">
+                        <thead>
+                            <tr>
+                                <th>Block #</th>
+                                <th>Timestamp</th>
+                                <th>Action</th>
+                                <th>Details</th>
+                                <th>Hash</th>
+                            </tr>
+                        </thead>
+                        <tbody id="blockchainTableBody">
+                            <tr>
+                                <td colspan="5" style="text-align:center;">Loading Ledger...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Reply Modal -->
+    <div class="modal" id="replyModal">
+        <div class="modal-content">
+            <i class="fa-solid fa-times close-modal"
+                onclick="document.getElementById('replyModal').classList.remove('active')"></i>
+            <h2>Reply to User</h2>
+            <p>Subject: <span id="replySubject" style="font-weight: bold; color: var(--primary);"></span></p>
+            <textarea id="replyText" rows="4" placeholder="Type your response to the user..."
+                style="width: 100%; margin-top: 10px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--text-main); padding: 10px; border-radius: 6px;"></textarea>
+            <input type="hidden" id="replyId">
+            <button onclick="submitReply()" class="btn btn-primary" style="margin-top: 10px;">Send Reply</button>
+        </div>
+    </div>
+
+    <!-- View Details Modal -->
+    <div class="modal" id="viewModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <i class="fa-solid fa-times close-modal"
+                onclick="document.getElementById('viewModal').classList.remove('active')"></i>
+            <h2><i class="fa-solid fa-file-contract"></i> Complaint Details</h2>
+            <div id="viewContent" style="margin-top: 15px; line-height: 1.6;">
+                <!-- Content -->
+            </div>
+            <button onclick="document.getElementById('viewModal').classList.remove('active')" class="btn btn-secondary"
+                style="margin-top: 20px; width: 100%;">Close</button>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check Auth
+            const user = App.store.getCurrentUser();
+            if (!user || user.role !== 'admin') {
+                alert('Access Denied. Admins only.');
+                window.location.href = 'login.html';
+                return;
+            }
+            document.getElementById('adminName').innerText = user.name;
+
+            const render = () => {
+                const filterText = document.getElementById('searchInput').value.toLowerCase();
+                const filterCat = document.getElementById('filterCategory').value;
+                const filterPrio = document.getElementById('filterPriority').value;
+
+                const allComplaints = App.complaints.getAll();
+                let filtered = allComplaints;
+
+                if (filterText) {
+                    filtered = filtered.filter(c =>
+                        c.id.toLowerCase().includes(filterText) ||
+                        c.subject.toLowerCase().includes(filterText) ||
+                        c.userName.toLowerCase().includes(filterText)
+                    );
+                }
+                if (filterCat) filtered = filtered.filter(c => c.category === filterCat);
+                if (filterPrio) filtered = filtered.filter(c => c.priority === filterPrio);
+
+                // Custom Render for Admin (SLA Support)
+                const tbody = document.getElementById('adminComplaintsBody');
+                tbody.innerHTML = '';
+                if (filtered.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;">No complaints found.</td></tr>`;
+                } else {
+                    filtered.forEach(c => {
+                        const statusClass = `status-${c.status}`;
+                        const priorityClass = c.priority === 'High' ? 'color: #ef4444; font-weight:bold;' : (c.priority === 'Medium' ? 'color: #f97316;' : 'color: #16a34a;');
+
+                        // SLA Logic
+                        let slaBadge = '<span class="status-badge" style="background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0">On Time</span>';
+                        const timeElapsed = Date.now() - c.timestamp;
+                        const hoursElapsed = timeElapsed / (1000 * 60 * 60);
+
+                        if (c.status !== 'resolved') {
+                            if (c.priority === 'High' && hoursElapsed > 24) slaBadge = '<span class="status-badge" style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca">OVERDUE</span>';
+                            else if (c.priority === 'Medium' && hoursElapsed > 72) slaBadge = '<span class="status-badge" style="background:#ffedd5;color:#9a3412;border:1px solid #fed7aa">Risk</span>';
+                        } else {
+                            slaBadge = '<span class="status-badge" style="background:#f1f5f9;color:#475569;">Closed</span>';
+                        }
+
+                        const row = `
+                            <tr>
+                                <td>${c.id}</td>
+                                <td>${c.userName}</td>
+                                <td>${c.subject} <br><span style="font-size:0.75rem; color:var(--text-muted);"><i class="fa-solid fa-location-dot"></i> ${c.location}</span></td>
+                                <td>${c.category}</td>
+                                <td style="${priorityClass}">${c.priority}</td>
+                                <td><span class="status-badge ${statusClass}">${c.status.toUpperCase()}</span></td>
+                                <td>${slaBadge}</td>
+                                <td>
+                                    <div style="display:flex; gap:5px;">
+                                        <button onclick="openViewModal('${c.id}')" class="btn btn-secondary" style="padding: 4px 6px; font-size: 0.75rem;" title="View"><i class="fa-solid fa-eye"></i></button>
+                                        <button onclick="window.assignOfficer('${c.id}')" class="btn btn-secondary" style="padding: 4px 6px; font-size: 0.75rem;" title="Assign Officer"><i class="fa-solid fa-user-plus"></i></button>
+                                        <button onclick="openReplyModal('${c.id}')" class="btn btn-secondary" style="padding: 4px 6px; font-size: 0.75rem;" title="Reply"><i class="fa-solid fa-reply"></i></button>
+                                        <button onclick="deleteComplaint('${c.id}')" class="btn btn-secondary" style="background:#ef4444; color:white; border:none; padding: 4px 6px; font-size: 0.75rem;" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                                        ${c.status !== 'resolved' ? `<button onclick="handleStatusUpdate('${c.id}', 'resolved')" class="btn btn-primary" style="padding: 4px 6px; font-size: 0.75rem;" title="Resolve"><i class="fa-solid fa-check"></i></button>` : ''}
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    });
+                }
+
+                // Stats
+                const stats = App.complaints.getStats();
+                document.getElementById('statTotal').innerText = stats.total;
+                document.getElementById('statPending').innerText = stats.pending;
+                document.getElementById('statResolved').innerText = stats.resolved;
+                document.getElementById('statOpen').innerText = stats.open;
+                document.getElementById('statPriority').innerText = stats.highPriority;
+
+                // Render Logs
+                const logs = App.store.getLogs();
+                const logList = document.getElementById('activityLogList');
+                if (logList) {
+                    logList.innerHTML = '';
+                    if (logs.length === 0) {
+                        logList.innerHTML = '<li style="color: var(--text-muted); text-align: center;">No activity recorded yet.</li>';
+                    } else {
+                        logs.forEach(l => {
+                            logList.innerHTML += `
+                                <li style="border-bottom: 1px solid #e5e7eb; padding: 8px 0; font-size: 0.9rem;">
+                                    <span style="color: var(--primary); font-weight: bold;">[${l.timestamp.split(',')[1]}]</span>
+                                    <span style="color: var(--text-main); margin-right: 10px;">${l.user}</span>
+                                    <span style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; margin-right: 10px;">${l.action}</span>
+                                    <span style="color: var(--text-muted);">${l.details}</span>
+                                </li>
+                            `;
+                        });
+                    }
+                }
+            };
+
+            // Monthly Trends Chart
+            const initTrendsChart = () => {
+                const trends = App.complaints.getMonthlyTrends();
+                const ctx = document.getElementById('trendsChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: Object.keys(trends),
+                        datasets: [{
+                            label: 'Complaints',
+                            data: Object.values(trends),
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#4b5563' } }
+                        },
+                        scales: {
+                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#cbd5e1' } },
+                            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#cbd5e1' } }
+                        }
+                    }
+                });
+            };
+            if (document.getElementById('trendsChart')) initTrendsChart();
+
+            // Officer Assign Logic
+            window.assignOfficer = (id) => {
+                document.getElementById('assignId').value = id;
+                document.getElementById('assignIdDisplay').innerText = id;
+                const select = document.getElementById('officerSelect');
+                select.innerHTML = '';
+                App.store.getOfficers().forEach(off => {
+                    select.innerHTML += `<option value="${off.name}">${off.name} (${off.dept})</option>`;
+                });
+                document.getElementById('assignModal').classList.add('active');
+            };
+
+            window.submitAssignment = async () => {
+                const id = document.getElementById('assignId').value;
+                const officer = document.getElementById('officerSelect').value;
+                if (await App.complaints.assign(id, officer)) {
+                    alert('Officer Assigned successfully');
+                    document.getElementById('assignModal').classList.remove('active');
+                    await App.store.loadData();
+                    render();
+                } else {
+                    alert('Failed to assign');
+                }
+            };
+
+            // Export CSV Logic
+            document.querySelector('.btn-secondary i.fa-download').parentElement.addEventListener('click', () => {
+                const complaints = App.complaints.getAll();
+                let csvContent = "data:text/csv;charset=utf-8,ID,User,Subject,Category,Priority,Status,Date\n";
+                complaints.forEach(c => {
+                    const row = `${c.id},${c.userName},"${c.subject}",${c.category},${c.priority},${c.status},${c.date}`;
+                    csvContent += row + "\n";
+                });
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "complaints_report.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+
+            render();
+            // Live Update Logs & Re-render (filtered)
+            setInterval(() => render(), 5000);
+
+            // Event Listeners for Filters
+            document.getElementById('filterCategory').addEventListener('change', render);
+            document.getElementById('filterPriority').addEventListener('change', render);
+
+            // Server Load Visualizer
+            const canvas = document.getElementById('serverLoadChart');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                let dataPoints = new Array(50).fill(20);
+
+                const drawChart = () => {
+                    // Resize
+                    canvas.width = canvas.parentElement.offsetWidth;
+                    canvas.height = canvas.parentElement.offsetHeight;
+
+                    // Shift Data
+                    dataPoints.push(Math.floor(Math.random() * (60 - 20) + 20)); // Random load 20-60%
+                    dataPoints.shift();
+
+                    document.getElementById('serverLoadText').innerText = dataPoints[dataPoints.length - 1] + "%";
+
+                    // Clear
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    // Draw Line
+                    ctx.beginPath();
+                    ctx.moveTo(0, canvas.height - (dataPoints[0] / 100 * canvas.height));
+
+                    for (let i = 1; i < dataPoints.length; i++) {
+                        const x = (i / (dataPoints.length - 1)) * canvas.width;
+                        const y = canvas.height - (dataPoints[i] / 100 * canvas.height);
+                        ctx.lineTo(x, y);
+                    }
+
+                    ctx.strokeStyle = '#2563eb';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Fill Gradient
+                    ctx.lineTo(canvas.width, canvas.height);
+                    ctx.lineTo(0, canvas.height);
+                    ctx.fillStyle = 'rgba(37, 99, 235, 0.1)';
+                    ctx.fill();
+                };
+
+                setInterval(drawChart, 1000);
+            }
+
+            // --- Real Analytics (Chart.js Pie) ---
+            const initAnalytics = () => {
+                const all = App.complaints.getAll();
+                const categories = {};
+
+                all.forEach(c => {
+                    const cat = c.category || 'Other';
+                    categories[cat] = (categories[cat] || 0) + 1;
+                });
+
+                const ctx = document.getElementById('analyticsChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(categories),
+                        datasets: [{
+                            data: Object.values(categories),
+                            backgroundColor: [
+                                '#3b82f6', // blue
+                                '#10b981', // green
+                                '#f59e0b', // orange
+                                '#ef4444', // red
+                                '#8b5cf6', // purple
+                                '#ec4899'  // pink
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    color: '#cbd5e1',
+                                    font: { family: "'Outfit', sans-serif" }
+                                }
+                            }
+                        }
+                    }
+                });
+            };
+            // Call Analytics Init
+            if (document.getElementById('analyticsChart')) initAnalytics();
+
+            // Search
+            document.getElementById('searchBtn').addEventListener('click', () => {
+                const text = document.getElementById('searchInput').value;
+                render(text);
+            });
+
+            // Modal Functions
+            window.openReplyModal = (id) => {
+                const c = App.complaints.getAll().find(x => x.id === id);
+                document.getElementById('replyId').value = id;
+                document.getElementById('replySubject').innerText = c.subject;
+                document.getElementById('replyText').value = c.adminReply || '';
+                document.getElementById('replyModal').classList.add('active');
+            };
+
+            window.openViewModal = (id) => {
+                const c = App.complaints.getAll().find(x => x.id === id);
+                // Fallbacks for older data
+                const sentiment = c.sentiment || 'Neutral';
+                const confidence = c.confidence || 85;
+
+                const content = document.getElementById('viewContent');
+                content.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <p><b style="color:var(--primary-accent)">ID:</b> ${c.id}</p>
+                            <p><b style="color:var(--text-muted)">Reported By:</b> ${c.userName}</p>
+                            <p><b style="color:var(--text-muted)">Date:</b> ${c.date}</p>
+                        </div>
+                        <div style="text-align:right;">
+                             <span class="status-badge status-${c.status}">${c.status.toUpperCase()}</span>
+                        </div>
+                    </div>
+                    
+                    <hr style="border-color: var(--glass-border); margin: 15px 0;">
+                    
+                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color: var(--success); margin-bottom: 10px;"><i class="fa-solid fa-robot"></i> AI Analysis Report</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.9rem;">
+                            <div style="margin-bottom: 20px; background: rgba(6, 182, 212, 0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(6, 182, 212, 0.1);">
+                        <h4 style="color: var(--primary-accent); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-map-location-dot"></i> Live Incident Map
+                        </h4>
+                        
+                        <div id="complaintMap" style="height: 250px; width: 100%; border-radius: 8px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                            ${!(c.latitude && c.longitude) ? `<div style="height:100%; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.2); color:var(--text-muted); font-style:italic;">GPS data not provided for this report</div>` : ''}
+                        </div>
+
+                        <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+                            <span><b>Address:</b> ${c.location}</span>
+                            ${c.latitude ? `<a href="https://www.google.com/maps?q=${c.latitude},${c.longitude}" target="_blank" style="color: var(--primary-accent);"><i class="fa-solid fa-up-right-from-square"></i> Open in Google Maps</a>` : ''}
+                        </p>
+                    </div><br>
+                            <div>
+                                <b style="color:var(--text-light)">Detected Category:</b><br>
+                                <span style="color:var(--text-main)">${c.category}</span>
+                            </div>
+                            <div>
+                                <b style="color:var(--text-light)">Priority Lvl:</b><br>
+                                <span style="${c.priority === 'High' ? 'color:#ef4444;font-weight:bold;' : 'color:var(--text-main)'}">${c.priority}</span>
+                            </div>
+                            <div>
+                                <b style="color:var(--text-light)">Sentiment:</b><br>
+                                <span style="color:var(--text-main)">${sentiment}</span>
+                            </div>
+                            <div>
+                                <b style="color:var(--text-light)">Confidence:</b><br>
+                                <div style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; margin-top: 5px; width: 100%; border:1px solid var(--glass-border);">
+                                    <div style="background: var(--success); height: 100%; border-radius: 4px; width: ${confidence}%;"></div>
+                                </div>
+                                <span style="font-size: 0.8rem; float: right; color:var(--text-muted)">${confidence}%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p><b style="color:var(--primary-accent)">Subject:</b> <span style="color:var(--text-main)">${c.subject}</span></p>
+                    <p><b style="color:var(--text-muted)">Location:</b> <span style="color:var(--text-main)">${c.location}</span></p>
+                    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-top: 10px; border:1px solid var(--glass-border);">
+                        <b style="color:var(--primary-accent)">Description:</b><br>
+                        <p style="color:var(--text-main); margin-top: 5px;">${c.description}</p>
+                    </div>
+                    ${c.image ? `
+                    <div style="margin-top: 15px;">
+                        <b style="color:var(--text-muted)">Evidence:</b><br>
+                        <img src="${c.image}" style="max-width: 100%; margin-top: 10px; border-radius: 8px; border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow);">
+                    </div>` : ''}
+                `;
+                document.getElementById('viewModal').classList.add('active');
+
+                // Initialize Leaflet Map after modal is visible
+                if (c.latitude && c.longitude) {
+                    setTimeout(() => {
+                        const mapContainer = document.getElementById('complaintMap');
+                        if (!mapContainer) return;
+                        
+                        // Clean previous instances
+                        if (window.activeMap) {
+                            window.activeMap.remove();
+                        }
+
+                        const map = L.map('complaintMap').setView([c.latitude, c.longitude], 15);
+                        window.activeMap = map;
+
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '© OpenStreetMap'
+                        }).addTo(map);
+
+                        L.marker([c.latitude, c.longitude]).addTo(map)
+                            .bindPopup(`<b>${c.category}</b><br>${c.subject}`)
+                            .openPopup();
+                    }, 300);
+                }
+            };
+
+            window.submitReply = async () => {
+                const id = document.getElementById('replyId').value;
+                const text = document.getElementById('replyText').value;
+                if (text) {
+                    await App.complaints.updateStatus(id, 'open', text);
+                    alert('Response sent to user.');
+                    document.getElementById('replyModal').classList.remove('active');
+                    render();
+                }
+            };
+
+            // Blockchain & Predictions
+            const loadBlockchain = async () => {
+                const chain = await App.api.get('/blockchain');
+                const tbody = document.getElementById('blockchainTableBody');
+                if (chain && chain.length > 0) {
+                    tbody.innerHTML = chain.map(block => `
+                        <tr>
+                            <td>${block.index}</td>
+                            <td>${new Date(block.timestamp).toLocaleString()}</td>
+                            <td>${block.data.action || 'GENESIS'}</td>
+                            <td>${block.data.details || block.data}</td>
+                            <td title="${block.hash}">${block.hash.substring(0, 10)}...</td>
+                        </tr>
+                    `).join('');
+                }
+            };
+            loadBlockchain();
+        });
+    </script>
+</body>
+
+</html>

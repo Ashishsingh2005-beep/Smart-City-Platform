@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map View | Smart City</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <a href="index.html"
+                style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-city"></i> Smart<span>City</span>
+            </a>
+        </div>
+        <div class="auth-buttons">
+            <span style="display: flex; align-items: center; gap: 10px; margin-right: 15px; color: var(--text-muted);">
+                <i class="fa-solid fa-user-circle"></i> <span id="userWelcome">Citizen</span>
+            </span>
+            <a href="#" class="btn btn-secondary">Logout</a>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html"><i class="fa-solid fa-layer-group"></i> Dashboard</a></li>
+                <li><a href="my-complaints.html"><i class="fa-solid fa-list-check"></i> My Complaints</a></li>
+                <li><a href="map-view.html" class="active"><i class="fa-solid fa-map"></i> Map View</a></li>
+                <li><a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a></li>
+                <li><a href="settings.html"><i class="fa-solid fa-gear"></i> Settings</a></li>
+                <li><a href="help.html"><i class="fa-solid fa-circle-question"></i> Help & Support</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="dashboard-header">
+                <div>
+                    <h2>City Map Overview</h2>
+                    <p style="color: var(--text-muted);">Visual representation of all reported issues near you.</p>
+                </div>
+            </div>
+
+            <div class="recent-complaints" style="height: calc(100vh - 180px); padding: 0;">
+                <div id="fullMap"
+                    style="height: 100%; width: 100%; border-radius: 12px; border: 1px solid var(--glass-border); position: relative;">
+                    <!-- GPS Button -->
+                    <button id="gpsBtn" class="btn btn-primary"
+                        style="position: absolute; bottom: 20px; right: 20px; z-index: 1000; padding: 10px 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <i class="fa-solid fa-crosshairs"></i> Locate Me (GPS)
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = App.store.getCurrentUser();
+            if (!user) { window.location.href = 'login.html'; return; }
+            document.getElementById('userWelcome').innerText = user.name;
+
+            // Init Map
+            let map;
+            try {
+                map = L.map('fullMap').setView([28.6139, 77.2090], 12);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+
+                const myComplaints = App.complaints.getUserComplaints(user.email);
+                const heatPoints = [];
+                myComplaints.forEach((c) => {
+                    const sadhash = c.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+                    const offsetLat = (sadhash % 100 - 50) * 0.001;
+                    const offsetLng = (sadhash % 80 - 40) * 0.001;
+                    const lat = 28.6139 + offsetLat;
+                    const lng = 77.2090 + offsetLng;
+                    heatPoints.push([lat, lng, 0.5]); // intensity
+
+                    L.marker([lat, lng]).addTo(map)
+                        .bindPopup(`<b>${c.subject}</b><br>Status: ${c.status}<br>Priority: ${c.priority}`);
+                });
+
+                // Heatmap Layer
+                if (L.heatLayer) {
+                    L.heatLayer(heatPoints, { radius: 25, blur: 15, maxZoom: 17 }).addTo(map);
+                }
+
+                // GPS Logic
+                document.getElementById('gpsBtn').addEventListener('click', () => {
+                    const btn = document.getElementById('gpsBtn');
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Locating...';
+
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                            (position) => {
+                                const lat = position.coords.latitude;
+                                const lng = position.coords.longitude;
+
+                                // Float to location
+                                map.flyTo([lat, lng], 16, {
+                                    animate: true,
+                                    duration: 1.5
+                                });
+
+                                // Create a custom pulsating marker for user location
+                                const userIcon = L.divIcon({
+                                    className: 'user-location-marker',
+                                    html: '<div style="background-color: #3b82f6; width: 15px; height: 15px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 0 10px rgba(59, 130, 246, 0.3);"></div>',
+                                    iconSize: [20, 20],
+                                    iconAnchor: [10, 10]
+                                });
+
+                                L.marker([lat, lng], { icon: userIcon }).addTo(map)
+                                    .bindPopup('<b>You are here</b>').openPopup();
+
+                                btn.innerHTML = '<i class="fa-solid fa-location-arrow"></i> My Location';
+                                setTimeout(() => btn.innerHTML = '<i class="fa-solid fa-crosshairs"></i> Locate Me (GPS)', 5000);
+                            },
+                            (err) => {
+                                console.error(err);
+                                alert("Unable to retrieve your location. Please ensure GPS is enabled.");
+                                btn.innerHTML = '<i class="fa-solid fa-crosshairs"></i> Locate Me (GPS)';
+                            },
+                            { enableHighAccuracy: true }
+                        );
+                    } else {
+                        alert("Geolocation is not supported by this browser.");
+                        btn.innerHTML = '<i class="fa-solid fa-crosshairs"></i> Locate Me (GPS)';
+                    }
+                });
+
+            } catch (e) {
+                console.error("Map init failed", e);
+                document.getElementById('fullMap').innerText = "Map could not load.";
+            }
+        });
+    </script>
+</body>
+
+</html>

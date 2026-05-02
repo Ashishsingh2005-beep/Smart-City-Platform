@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up | Smart City</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar"
+        style="position: absolute; width:100%; top:0; background: transparent; border: none; box-shadow: none;">
+        <ul class="nav-links">
+            <li><a href="index.html">Platform</a></li>
+            <li><a href="transparency.html">Blockchain Ledger</a></li>
+            <li><a href="login.html">Sign In</a></li>
+        </ul>
+    </nav>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <h2>Join the Community</h2>
+            <p id="errorMsg" class="error-msg"></p>
+            <form id="signupForm">
+                <div id="signupStep1">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="name" placeholder="John Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="email" placeholder="citizen@smartcity.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="password" placeholder="Create a strong password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Verify Email & Continue</button>
+                </div>
+
+                <!-- OTP Step (Hidden by default) -->
+                <div id="signupStep2" style="display: none; text-align: center;">
+                    <div style="background: rgba(6, 182, 212, 0.1); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px dashed var(--primary-accent);">
+                        <i class="fa-solid fa-envelope-circle-check" style="font-size: 2rem; color: var(--primary-accent); margin-bottom: 10px;"></i>
+                        <p style="font-size: 0.9rem; color: white;">A 4-digit verification code has been sent to <br><b id="displayEmail" style="color: var(--primary-accent);"></b></p>
+                    </div>
+                    <div class="form-group">
+                        <label>Enter 4-Digit OTP</label>
+                        <input type="text" id="otpCode" placeholder="0 0 0 0" maxlength="4" style="text-align: center; letter-spacing: 15px; font-size: 1.5rem; font-weight: bold; background: rgba(0,0,0,0.3);">
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-light); margin-bottom: 20px;">For Demo: Use code <b style="color: white;">1234</b></p>
+                    <button type="button" onclick="verifyOTP()" class="btn btn-primary btn-block">Complete Registration</button>
+                    <button type="button" onclick="location.reload()" class="btn btn-secondary btn-block" style="margin-top: 10px; border: none; background: transparent; color: var(--text-light);">Change Email</button>
+                </div>
+
+                <div style="position: relative; margin: 25px 0;" id="authDivider">
+                    <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                    <span
+                        style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #0f172a; padding: 0 15px; color: var(--text-light); font-size: 0.8rem; font-weight: 600;">OR</span>
+                </div>
+
+                <button type="button" id="faceSignupBtn" onclick="startFaceAuth()" class="btn btn-secondary btn-block"
+                    style="background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.3); color: var(--primary-accent);">
+                    <i class="fa-solid fa-face-viewfinder"></i> Register with Face ID
+                </button>
+            </form>
+            <div class="auth-footer">
+                <p>Already have an account? <a href="login.html"
+                        style="color: var(--primary-accent); font-weight: 700;">Login</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Face Modal -->
+    <div id="faceModal" class="modal">
+        <div class="modal-content"
+            style="text-align: center; max-width: 480px; padding: 2.5rem; border-radius: 30px; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 50px rgba(6, 182, 212, 0.2);">
+            <div id="faceScanStage">
+                <h3 style="font-size: 1.8rem; margin-bottom: 10px; background: linear-gradient(to right, #fff, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aadhaar Digital Enrollment</h3>
+                <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 20px;">Registering Biometric Identity with Government Node</p>
+
+                <div
+                    style="position: relative; width: 100%; height: 320px; background: #000; margin: 15px 0; border-radius: 24px; overflow: hidden; border: 2px solid rgba(255,255,255,0.05); box-shadow: inset 0 0 30px rgba(0,0,0,0.5);">
+                    <video id="faceVideo" autoplay playsinline
+                        style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); filter: contrast(1.1) brightness(1.1);"></video>
+                    <canvas id="faceCanvas" style="display:none;"></canvas>
+                    <img id="faceSnapshot"
+                        style="display:none; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);">
+
+                    <!-- Futuristic HUD -->
+                    <div id="faceOverlay"
+                        style="position: absolute; top:0; left:0; width:100%; height:100%; display:none; pointer-events: none;">
+                        <div
+                            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 220px; height: 220px; border: 2px dashed rgba(6, 182, 212, 0.5); border-radius: 50%; box-shadow: 0 0 0 1000px rgba(0,0,0,0.4);">
+                        </div>
+                        <div
+                            style="position: absolute; top: 20px; left: 20px; width: 30px; height: 30px; border-top: 3px solid #06b6d4; border-left: 3px solid #06b6d4;">
+                        </div>
+                        <div
+                            style="position: absolute; top: 20px; right: 20px; width: 30px; height: 30px; border-top: 3px solid #06b6d4; border-right: 3px solid #06b6d4;">
+                        </div>
+                        <div id="scanLine"
+                            style="position: absolute; top:0; left:0; width:100%; height:4px; background: linear-gradient(to right, transparent, #06b6d4, transparent); box-shadow: 0 0 20px #06b6d4; animation: scan 3s infinite ease-in-out; display:none;">
+                        </div>
+                        <div
+                            style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); font-family: monospace; font-size: 0.7rem; color: #06b6d4; text-transform: uppercase; letter-spacing: 2px;">
+                            Sensor: <span id="hudStatus">READY</span>
+                        </div>
+                    </div>
+                </div>
+
+                <p id="faceStatus"
+                    style="color: var(--text-muted); margin: 15px 0; font-weight: 500; min-height: 24px;">Initializing
+                    biometric sensor...</p>
+                <div id="faceActions" style="display: flex; gap: 12px; margin-top: 20px;">
+                    <button id="captureBtn" onclick="captureFaceForSignup()" class="btn btn-primary"
+                        style="flex: 2; display: none; background: linear-gradient(135deg, #06b6d4, #6366f1); border: none;">Capture
+                        & Enroll</button>
+                    <button onclick="closeFaceAuth()" class="btn btn-secondary"
+                        style="flex: 1; background: rgba(255,255,255,0.05); color: white; border-color: rgba(255,255,255,0.1);">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const emailInput = document.getElementById('email');
+            const email = emailInput.value;
+            const err = document.getElementById('errorMsg');
+
+            if (!App.security.validateEmail(email)) {
+                err.innerText = "Incorrect email format. Please check your email.";
+                err.style.display = 'block';
+                emailInput.style.borderColor = 'var(--danger)';
+                return;
+            }
+
+            // Transition to OTP Step
+            document.getElementById('signupStep1').style.display = 'none';
+            document.getElementById('authDivider').style.display = 'none';
+            document.getElementById('faceSignupBtn').style.display = 'none';
+            document.getElementById('signupStep2').style.display = 'block';
+            document.getElementById('displayEmail').innerText = email;
+            
+            // In a real app, this is where you'd call an API to send a real OTP.
+            console.log("[SIMULATION] OTP Sent to", email, ": 1234");
+        });
+
+        window.verifyOTP = async () => {
+            const otp = document.getElementById('otpCode').value;
+            const err = document.getElementById('errorMsg');
+            
+            if (otp !== "1234") {
+                err.innerText = "Invalid verification code. Please try again.";
+                err.style.display = 'block';
+                return;
+            }
+
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const result = await App.auth.register(name, email, password);
+            if (result.success) {
+                alert('Email Verified! Account created successfully.');
+                await App.auth.login(email, password);
+                window.location.href = 'dashboard.html';
+            } else {
+                err.innerText = result.message || "Registration failed";
+                err.style.display = 'block';
+                // If account exists, go back
+                document.getElementById('signupStep1').style.display = 'block';
+                document.getElementById('signupStep2').style.display = 'none';
+            }
+        };
+
+        // Face ID Logic for Signup
+        let videoStream;
+        window.startFaceAuth = async () => {
+            const modal = document.getElementById('faceModal');
+            const video = document.getElementById('faceVideo');
+            const status = document.getElementById('faceStatus');
+            const captureBtn = document.getElementById('captureBtn');
+            const overlay = document.getElementById('faceOverlay');
+            const scanLine = document.getElementById('scanLine');
+
+            modal.classList.add('active');
+            video.style.display = 'block';
+            document.getElementById('faceSnapshot').style.display = 'none';
+
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = videoStream;
+                status.innerText = "Align your face with the scanner...";
+                captureBtn.style.display = 'block';
+                overlay.style.display = 'block';
+                scanLine.style.display = 'block';
+            } catch (err) {
+                status.innerText = "Error: Camera access required for Face ID.";
+            }
+        };
+
+        window.captureFaceForSignup = async () => {
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (!name || !email || !password) {
+                alert("Please fill name, email, and password first before capturing Face ID.");
+                return;
+            }
+
+            const video = document.getElementById('faceVideo');
+            const canvas = document.getElementById('faceCanvas');
+            const img = document.getElementById('faceSnapshot');
+            const status = document.getElementById('faceStatus');
+            const hudStatus = document.getElementById('hudStatus');
+            const scanLine = document.getElementById('scanLine');
+
+            hudStatus.innerText = "CAPTURING...";
+            hudStatus.style.color = "#fbbf24";
+            scanLine.style.display = 'block';
+
+            // Wait for 1s for "Capture" effect
+            await new Promise(r => setTimeout(r, 1000));
+
+            // Generate Stable Fingerprint
+            const faceFingerprint = App.computeFaceFingerprint(video);
+
+            // Capture snapshot for preview
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            img.src = canvas.toDataURL('image/png');
+
+            video.style.display = 'none';
+            img.style.display = 'block';
+            document.getElementById('captureBtn').style.display = 'none';
+            scanLine.style.display = 'none';
+
+            hudStatus.innerText = "ENCRYPTING...";
+            status.innerHTML = "<i class='fa-solid fa-shield-halved fa-spin' style='color: #06b6d4'></i> Securing biometric signature into Digital Vault...";
+
+            const result = await App.auth.register(name, email, password, faceFingerprint);
+            if (result.success) {
+                hudStatus.innerText = "ENROLLED";
+                hudStatus.style.color = "#10b981";
+                status.innerHTML = "<span style='color: #10b981; font-weight: bold;'>Biometric ID Linked Successfully! Redirecting...</span>";
+                setTimeout(async () => {
+                    await App.auth.login(email, password);
+                    window.location.href = 'dashboard.html';
+                }, 1500);
+            } else {
+                hudStatus.innerText = "ERROR";
+                hudStatus.style.color = "#ef4444";
+                alert(result.message);
+                closeFaceAuth();
+            }
+        };
+
+        window.closeFaceAuth = () => {
+            const modal = document.getElementById('faceModal');
+            modal.classList.remove('active');
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+            }
+        };
+    </script>
+</body>
+
+</html>
