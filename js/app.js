@@ -6,7 +6,7 @@
 const App = {
     // --- Backend API Integration ---
     api: {
-        baseUrl: 'http://localhost:3000/api',
+        baseUrl: 'https://smart-city-platform-l2ln.onrender.com/api',
 
         getHeaders() {
             const headers = { 'Content-Type': 'application/json' };
