@@ -48,6 +48,17 @@
                         <i class="fa-solid fa-envelope-circle-check" style="font-size: 2rem; color: var(--primary-accent); margin-bottom: 10px;"></i>
                         <p style="font-size: 0.9rem; color: white;">A 6-digit verification code has been sent to <br><b id="displayEmail" style="color: var(--primary-accent);"></b></p>
                     </div>
+
+                    <!-- OTP Notification -->
+                    <div id="otpNotification" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.15)); padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(16, 185, 129, 0.3); display: none;">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                            <i class="fa-solid fa-shield-halved" style="color: #10b981; font-size: 1.3rem;"></i>
+                            <span style="color: #d1d5db; font-size: 0.85rem;">Your Verification Code:</span>
+                        </div>
+                        <div id="otpDisplayCode" style="font-size: 2rem; font-weight: 800; letter-spacing: 12px; color: #10b981; margin-top: 8px; font-family: monospace;"></div>
+                        <p style="font-size: 0.7rem; color: #9ca3af; margin-top: 8px;"><i class="fa-solid fa-clock"></i> Valid for 5 minutes</p>
+                    </div>
+
                     <div class="form-group">
                         <label>Enter 6-Digit OTP</label>
                         <input type="text" id="otpCode" placeholder="0 0 0 0 0 0" maxlength="6" style="text-align: center; letter-spacing: 15px; font-size: 1.5rem; font-weight: bold; background: rgba(0,0,0,0.3);">
@@ -157,6 +168,12 @@
             document.getElementById('faceSignupBtn').style.display = 'none';
             document.getElementById('signupStep2').style.display = 'block';
             document.getElementById('displayEmail').innerText = email;
+
+            // Show OTP on screen
+            if (result.otp) {
+                document.getElementById('otpDisplayCode').innerText = result.otp;
+                document.getElementById('otpNotification').style.display = 'block';
+            }
         });
 
         window.verifyOTP = async () => {

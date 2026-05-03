@@ -294,7 +294,7 @@ app.post('/api/auth/send-otp', async (req, res) => {
             console.log(`[SIMULATED SMS OTP] for Phone ${email}: ${otpCode}`);
         }
 
-        res.json({ success: true, message: 'OTP sent successfully' });
+        res.json({ success: true, message: 'OTP sent successfully', otp: otpCode });
     } catch (e) {
         console.error(e);
         res.status(500).json({ success: false, message: 'Failed to send OTP' });
