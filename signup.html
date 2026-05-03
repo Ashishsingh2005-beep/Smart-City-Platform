@@ -39,6 +39,7 @@
                         <label>Password</label>
                         <input type="password" id="password" placeholder="Create a strong password" required>
                     </div>
+                    <div id="recaptcha-container"></div>
                     <button type="submit" class="btn btn-primary btn-block">Verify Email & Continue</button>
                 </div>
 
@@ -127,8 +128,25 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="js/app.js"></script>
     <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5ReSev22Na1dWvIaiNzIAbNK9vWKJH5w",
+            authDomain: "smartcitysms-5466f.firebaseapp.com",
+            projectId: "smartcitysms-5466f",
+            storageBucket: "smartcitysms-5466f.firebasestorage.app",
+            messagingSenderId: "737596699626",
+            appId: "1:737596699626:web:8f16e7707f2306bc753893"
+        };
+        firebase.initializeApp(firebaseConfig);
+        
+        // Setup invisible Recaptcha for Firebase Phone Auth
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+            'size': 'invisible'
+        });
         document.getElementById('signupForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const emailInput = document.getElementById('email');
@@ -137,18 +155,32 @@
 
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             const phoneRegex = /^\d{10}$/; // 10-digit phone number
-            if (!emailRegex.test(email) && !phoneRegex.test(email)) {
+            const isPhone = phoneRegex.test(email);
+
+            if (!emailRegex.test(email) && !isPhone) {
                 err.innerText = "Incorrect format. Please enter a valid Email or 10-digit Phone Number.";
                 err.style.display = 'block';
                 emailInput.style.borderColor = 'var(--danger)';
                 return;
             }
 
-            const result = await App.auth.sendOtp(email);
-            if (!result.success) {
-                err.innerText = result.message || "Failed to send OTP.";
-                err.style.display = 'block';
-                return;
+            if (isPhone) {
+                try {
+                    const phoneNumber = "+91" + email; // Assuming India
+                    window.confirmationResult = await firebase.auth().signInWithPhoneNumber(phoneNumber, window.recaptchaVerifier);
+                } catch (error) {
+                    console.error(error);
+                    err.innerText = error.message;
+                    err.style.display = 'block';
+                    return;
+                }
+            } else {
+                const result = await App.auth.sendOtp(email);
+                if (!result.success) {
+                    err.innerText = result.message || "Failed to send OTP.";
+                    err.style.display = 'block';
+                    return;
+                }
             }
 
             // Transition to OTP Step
@@ -163,13 +195,23 @@
             const otp = document.getElementById('otpCode').value;
             const email = document.getElementById('email').value;
             const err = document.getElementById('errorMsg');
+            const isPhone = /^\d{10}$/.test(email);
             
-            const verifyResult = await App.auth.verifyOtp(email, otp);
-
-            if (!verifyResult.success) {
-                err.innerText = verifyResult.message || "Invalid verification code.";
-                err.style.display = 'block';
-                return;
+            if (isPhone) {
+                try {
+                    await window.confirmationResult.confirm(otp);
+                } catch (error) {
+                    err.innerText = "Invalid SMS code. Please try again.";
+                    err.style.display = 'block';
+                    return;
+                }
+            } else {
+                const verifyResult = await App.auth.verifyOtp(email, otp);
+                if (!verifyResult.success) {
+                    err.innerText = verifyResult.message || "Invalid verification code.";
+                    err.style.display = 'block';
+                    return;
+                }
             }
 
             const name = document.getElementById('name').value;
