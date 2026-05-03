@@ -46,15 +46,14 @@
                 <div id="signupStep2" style="display: none; text-align: center;">
                     <div style="background: rgba(6, 182, 212, 0.1); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px dashed var(--primary-accent);">
                         <i class="fa-solid fa-envelope-circle-check" style="font-size: 2rem; color: var(--primary-accent); margin-bottom: 10px;"></i>
-                        <p style="font-size: 0.9rem; color: white;">A 4-digit verification code has been sent to <br><b id="displayEmail" style="color: var(--primary-accent);"></b></p>
+                        <p style="font-size: 0.9rem; color: white;">A 6-digit verification code has been sent to <br><b id="displayEmail" style="color: var(--primary-accent);"></b></p>
                     </div>
                     <div class="form-group">
-                        <label>Enter 4-Digit OTP</label>
-                        <input type="text" id="otpCode" placeholder="0 0 0 0" maxlength="4" style="text-align: center; letter-spacing: 15px; font-size: 1.5rem; font-weight: bold; background: rgba(0,0,0,0.3);">
+                        <label>Enter 6-Digit OTP</label>
+                        <input type="text" id="otpCode" placeholder="0 0 0 0 0 0" maxlength="6" style="text-align: center; letter-spacing: 15px; font-size: 1.5rem; font-weight: bold; background: rgba(0,0,0,0.3);">
                     </div>
-                    <p style="font-size: 0.8rem; color: var(--text-light); margin-bottom: 20px;">For Demo: Use code <b style="color: white;">1234</b></p>
                     <button type="button" onclick="verifyOTP()" class="btn btn-primary btn-block">Complete Registration</button>
-                    <button type="button" onclick="location.reload()" class="btn btn-secondary btn-block" style="margin-top: 10px; border: none; background: transparent; color: var(--text-light);">Change Email</button>
+                    <button type="button" onclick="location.reload()" class="btn btn-secondary btn-block" style="margin-top: 10px; border: none; background: transparent; color: var(--text-light);">Change Email/Phone</button>
                 </div>
 
                 <div style="position: relative; margin: 25px 0;" id="authDivider">
