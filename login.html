@@ -242,6 +242,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
     <script src="js/app.js"></script>
     <script>
         App.i18n.init();
@@ -354,20 +355,26 @@
             scanLine.style.display = 'block';
             captureBtn.style.display = 'none';
 
-            // 2. Multi-Sample Neural Fingerprinting (More accurate)
+            // 2. Load Models
+            status.innerHTML = "<i class='fa-solid fa-spinner fa-spin' style='color: #06b6d4'></i> Loading Neural Models...";
+            await App.loadFaceAPI();
+
             status.innerHTML = "<i class='fa-solid fa-atom fa-spin' style='color: #06b6d4'></i> Analyzing facial geometry and nodal points...";
 
             // Wait for 1.5s for "Scanning" effect
             await new Promise(r => setTimeout(r, 1500));
 
-            const fingerprint = App.computeFaceFingerprint(video);
-
-            // Capture snapshot for preview
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0);
-            const dataUrl = canvas.toDataURL('image/png');
-            img.src = dataUrl;
+            const descriptor = await App.getFaceDescriptor(video);
+            if (!descriptor) {
+                hudStatus.innerText = "ERROR";
+                hudStatus.style.color = "#ef4444";
+                status.innerText = "No face detected. Please try again.";
+                captureBtn.style.display = 'block';
+                scanLine.style.display = 'none';
+                return;
+            }
+            
+            const faceDataJSON = JSON.stringify(descriptor);
 
             video.style.display = 'none';
             img.style.display = 'block';
@@ -377,7 +384,7 @@
             status.innerHTML = "<i class='fa-solid fa-microchip fa-spin'></i> Running cross-reference against blockchain vault...";
 
             setTimeout(async () => {
-                const result = await App.auth.faceLogin(fingerprint);
+                const result = await App.auth.faceLogin(faceDataJSON);
 
                 if (result.success) {
                     hudStatus.innerText = "MATCH FOUND";
@@ -393,13 +400,24 @@
                     hudStatus.innerText = "NO MATCH";
                     hudStatus.style.color = "#ef4444";
                     status.innerHTML = "<span style='color: #f59e0b; font-weight: bold;'><i class='fa-solid fa-user-secret'></i> Identity not recognized in Digital Ledger.</span>";
-                    setTimeout(() => {
+                    setTimeout(async () => {
                         document.getElementById('faceScanStage').style.display = 'none';
                         document.getElementById('newPersonForm').style.display = 'block';
-                        window.tempFaceData = fingerprint;
+                        
+                        // To register properly, capture 5 multiple angles.
+                        status.innerHTML = "Turn your head slightly left and right... <br><span id='loginCapProgress' style='font-size: 1.2rem; font-weight: bold; color: #10b981;'>0 / 5 Captured</span>";
+                        document.getElementById('faceVideo').style.display = 'block'; // re-show video
+                        
+                        const onProgress = (count) => {
+                            const p = document.getElementById('loginCapProgress');
+                            if (p) p.innerText = `${count} / 5 Captured`;
+                        };
+
+                        window.tempFaceData = await App.captureMultipleEmbeddings(document.getElementById('faceVideo'), 5, 500, onProgress);
+                        document.getElementById('faceVideo').style.display = 'none';
                     }, 1500);
                 }
-            }, 2000);
+            }, 500);
         };
 
         window.registerFaceUser = async () => {
@@ -416,7 +434,7 @@
             const status = document.getElementById('faceStatus');
             status.innerText = "Encoding biometric signature to encrypted ledger...";
 
-            const result = await App.auth.register(name, email, pass, faceData);
+            const result = await App.auth.register(name, email, pass, JSON.stringify(faceData));
             if (result.success) {
                 alert("Account secured with Face ID! Logging in...");
                 await performLogin(email, pass);

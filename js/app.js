@@ -335,49 +335,53 @@ const App = {
     },
 
     // --- Neural Utilities ---
-    computeFaceFingerprint: (videoOrCanvas) => {
-        try {
-            // 1. Setup high-res and low-res snapshots for better matching
-            const size = 16; // 16x16 = 256 bits (More robust than 1024)
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = size;
-            tempCanvas.height = size;
-            const ctx = tempCanvas.getContext('2d');
-
-            // 2. Crop to center (assume face is in middle 80% of the view)
-            const sw = videoOrCanvas.videoWidth || videoOrCanvas.width;
-            const sh = videoOrCanvas.videoHeight || videoOrCanvas.height;
-            const cropSize = Math.min(sw, sh) * 0.8;
-            const sx = (sw - cropSize) / 2;
-            const sy = (sh - cropSize) / 2;
-
-            ctx.drawImage(videoOrCanvas, sx, sy, cropSize, cropSize, 0, 0, size, size);
-            const imageData = ctx.getImageData(0, 0, size, size).data;
-
-            // 3. Compute Perceptual Average Hash
-            let total = 0;
-            const grays = [];
-            for (let i = 0; i < imageData.length; i += 4) {
-                // Apply Gamma Correction to normalize shadows/highlights
-                const r = imageData[i] / 255;
-                const g = imageData[i + 1] / 255;
-                const b = imageData[i + 2] / 255;
-                const gray = (0.299 * r + 0.587 * g + 0.114 * b);
-                const corrected = Math.pow(gray, 0.8) * 255;
-                grays.push(corrected);
-                total += corrected;
-            }
-            const avg = total / grays.length;
-
-            let hash = "";
-            for (let g of grays) {
-                hash += g > avg ? "1" : "0";
-            }
-            return hash; 
-        } catch (err) {
-            console.error("Biometric Fingerprinting Error:", err);
-            return "0".repeat(1024);
+    loadFaceAPI: async () => {
+        if (!window.faceapi) {
+            alert("Face API script not loaded");
+            return false;
         }
+        try {
+            await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
+            await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+            await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+            return true;
+        } catch (e) {
+            alert("Face API Load Error: " + e.message);
+            console.error("Face API Load Error:", e);
+            return false;
+        }
+    },
+
+    getFaceDescriptor: async (videoEl) => {
+        if (!window.faceapi) return null;
+        try {
+            // Lower minConfidence to 0.2 (default is 0.5) so it captures even in varied lighting/quality
+            const options = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.2 });
+            const detection = await faceapi.detectSingleFace(videoEl, options).withFaceLandmarks().withFaceDescriptor();
+            return detection ? Array.from(detection.descriptor) : null;
+        } catch(e) {
+            console.error("Detection error: ", e);
+            return null;
+        }
+    },
+
+    captureMultipleEmbeddings: async (videoEl, count = 5, delay = 500, onProgress = null) => {
+        const embeddings = [];
+        let attempts = 0;
+        try {
+            while (embeddings.length < count && attempts < count * 3) {
+                const desc = await App.getFaceDescriptor(videoEl);
+                if (desc) {
+                    embeddings.push(desc);
+                    if (onProgress) onProgress(embeddings.length);
+                }
+                attempts++;
+                await new Promise(r => setTimeout(r, delay));
+            }
+        } catch(e) {
+            alert("Capture error: " + e.message);
+        }
+        return embeddings;
     },
 
     // --- Authentication ---

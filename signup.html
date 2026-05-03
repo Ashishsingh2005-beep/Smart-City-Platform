@@ -127,6 +127,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
     <script src="js/app.js"></script>
     <script>
         document.getElementById('signupForm').addEventListener('submit', async (e) => {
@@ -219,37 +220,44 @@
             }
 
             const video = document.getElementById('faceVideo');
-            const canvas = document.getElementById('faceCanvas');
-            const img = document.getElementById('faceSnapshot');
             const status = document.getElementById('faceStatus');
             const hudStatus = document.getElementById('hudStatus');
             const scanLine = document.getElementById('scanLine');
 
-            hudStatus.innerText = "CAPTURING...";
+            hudStatus.innerText = "CAPTURING MULTIPLE ANGLES...";
             hudStatus.style.color = "#fbbf24";
             scanLine.style.display = 'block';
+            document.getElementById('captureBtn').style.display = 'none';
 
-            // Wait for 1s for "Capture" effect
-            await new Promise(r => setTimeout(r, 1000));
+            status.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Loading Face AI Models...";
+            await App.loadFaceAPI();
 
-            // Generate Stable Fingerprint
-            const faceFingerprint = App.computeFaceFingerprint(video);
+            status.innerHTML = "Turn your head slightly left and right... <br><span id='capProgress' style='font-size: 1.2rem; font-weight: bold; color: #10b981;'>0 / 5 Captured</span>";
+            
+            const onProgress = (count) => {
+                const p = document.getElementById('capProgress');
+                if (p) p.innerText = `${count} / 5 Captured`;
+            };
 
-            // Capture snapshot for preview
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0);
-            img.src = canvas.toDataURL('image/png');
+            const embeddings = await App.captureMultipleEmbeddings(video, 5, 500, onProgress);
+
+            if (embeddings.length === 0) {
+                hudStatus.innerText = "ERROR";
+                hudStatus.style.color = "#ef4444";
+                status.innerText = "No face detected. Please ensure good lighting and look at the camera.";
+                document.getElementById('captureBtn').style.display = 'block';
+                scanLine.style.display = 'none';
+                return;
+            }
 
             video.style.display = 'none';
-            img.style.display = 'block';
-            document.getElementById('captureBtn').style.display = 'none';
             scanLine.style.display = 'none';
 
             hudStatus.innerText = "ENCRYPTING...";
             status.innerHTML = "<i class='fa-solid fa-shield-halved fa-spin' style='color: #06b6d4'></i> Securing biometric signature into Digital Vault...";
 
-            const result = await App.auth.register(name, email, password, faceFingerprint);
+            const faceDataJSON = JSON.stringify(embeddings);
+            const result = await App.auth.register(name, email, password, faceDataJSON);
             if (result.success) {
                 hudStatus.innerText = "ENROLLED";
                 hudStatus.style.color = "#10b981";

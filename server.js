@@ -299,35 +299,50 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// Helper for Hamming Distance (Biometric Similarity)
-const hammingDistance = (s1, s2) => {
-    if (!s1 || !s2 || s1.length !== s2.length) return 999;
-    let distance = 0;
-    for (let i = 0; i < s1.length; i++) {
-        if (s1[i] !== s2[i]) distance++;
+// Euclidean Distance for Face Embeddings
+const euclideanDistance = (arr1, arr2) => {
+    if (!arr1 || !arr2 || arr1.length !== arr2.length) return 999;
+    let sum = 0;
+    for (let i = 0; i < arr1.length; i++) {
+        sum += Math.pow(arr1[i] - arr2[i], 2);
     }
-    return distance;
+    return Math.sqrt(sum);
 };
 
 app.post('/api/auth/face-login', async (req, res) => {
     try {
         const { faceData } = req.body;
+        let loginDescriptor;
+        try {
+            loginDescriptor = JSON.parse(faceData);
+        } catch (e) {
+            return res.json({ success: false, message: 'Invalid face data format' });
+        }
+
         const users = await User.find({ faceData: { $ne: null } });
 
-        // Increased threshold for 256-bit hash (16x16) to handle camera noise.
-        const THRESHOLD = 150; 
+        // Threshold for face-api.js (0.6 is typical, 0.55 is strict)
+        const THRESHOLD = 0.55; 
         let bestMatch = null;
         let minDistance = 9999;
 
         users.forEach(u => {
-            const dist = hammingDistance(faceData, u.faceData);
-            if (dist < minDistance) {
-                minDistance = dist;
-                bestMatch = u;
+            try {
+                const storedEmbeddings = JSON.parse(u.faceData);
+                // Compare with all stored embeddings for the user
+                for (let stored of storedEmbeddings) {
+                    const dist = euclideanDistance(loginDescriptor, stored);
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        bestMatch = u;
+                    }
+                }
+            } catch (err) {
+                // Ignore old string hash accounts
             }
         });
 
-        console.log(`[BIOMETRIC] Best Match Distance: ${minDistance} | Threshold: ${THRESHOLD}`);
+        console.log(`[BIOMETRIC] Best Match Distance: ${minDistance.toFixed(3)} | Threshold: ${THRESHOLD}`);
 
         if (bestMatch && minDistance < THRESHOLD) {
             const user = bestMatch;
