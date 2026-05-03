@@ -254,7 +254,7 @@ app.post('/api/auth/register', async (req, res) => {
         const existing = await User.findOne({ email });
 
         if (existing) {
-            return res.json({ success: false, message: 'Email already registered' });
+            return res.json({ success: false, message: 'Account with this Email/Phone already registered' });
         }
 
         const newUser = new User({

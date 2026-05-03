@@ -32,9 +32,9 @@
                         <input type="text" id="name" placeholder="John Doe" required>
                     </div>
                     <div class="form-group">
-                        <label>Email Address</label>
-                        <input type="email" id="email" placeholder="citizen@smartcity.com" required>
-                    </div>
+                    <label>Email or Phone Number</label>
+                    <input type="text" id="email" class="form-control" placeholder="john@example.com or 9876543210" required>
+                </div>
                     <div class="form-group">
                         <label>Password</label>
                         <input type="password" id="password" placeholder="Create a strong password" required>
@@ -137,8 +137,9 @@
             const err = document.getElementById('errorMsg');
 
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                err.innerText = "Incorrect email format. Please check your email.";
+            const phoneRegex = /^\d{10}$/; // 10-digit phone number
+            if (!emailRegex.test(email) && !phoneRegex.test(email)) {
+                err.innerText = "Incorrect format. Please enter a valid Email or 10-digit Phone Number.";
                 err.style.display = 'block';
                 emailInput.style.borderColor = 'var(--danger)';
                 return;
