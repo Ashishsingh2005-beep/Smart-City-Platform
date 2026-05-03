@@ -386,6 +386,14 @@ const App = {
 
     // --- Authentication ---
     auth: {
+        sendOtp: async (email) => {
+            return await App.api.post('/auth/send-otp', { email });
+        },
+
+        verifyOtp: async (email, otp) => {
+            return await App.api.post('/auth/verify-otp', { email, otp });
+        },
+
         register: async (name, email, password, faceData = null) => {
             return await App.api.post('/auth/register', { name, email, password, faceData });
         },

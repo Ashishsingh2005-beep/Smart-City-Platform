@@ -145,29 +145,35 @@
                 return;
             }
 
+            const result = await App.auth.sendOtp(email);
+            if (!result.success) {
+                err.innerText = result.message || "Failed to send OTP.";
+                err.style.display = 'block';
+                return;
+            }
+
             // Transition to OTP Step
             document.getElementById('signupStep1').style.display = 'none';
             document.getElementById('authDivider').style.display = 'none';
             document.getElementById('faceSignupBtn').style.display = 'none';
             document.getElementById('signupStep2').style.display = 'block';
             document.getElementById('displayEmail').innerText = email;
-            
-            // In a real app, this is where you'd call an API to send a real OTP.
-            console.log("[SIMULATION] OTP Sent to", email, ": 1234");
         });
 
         window.verifyOTP = async () => {
             const otp = document.getElementById('otpCode').value;
+            const email = document.getElementById('email').value;
             const err = document.getElementById('errorMsg');
             
-            if (otp !== "1234") {
-                err.innerText = "Invalid verification code. Please try again.";
+            const verifyResult = await App.auth.verifyOtp(email, otp);
+
+            if (!verifyResult.success) {
+                err.innerText = verifyResult.message || "Invalid verification code.";
                 err.style.display = 'block';
                 return;
             }
 
             const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
             const result = await App.auth.register(name, email, password);

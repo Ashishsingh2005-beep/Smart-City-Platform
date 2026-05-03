@@ -58,6 +58,23 @@ const UserSchema = new mongoose.Schema({
     points: { type: Number, default: 0 },
     faceData: String
 });
+
+const OtpSchema = new mongoose.Schema({
+    email: { type: String, required: true },
+    otp: { type: String, required: true },
+    expiresAt: { type: Date, required: true }
+});
+const OTP = mongoose.model('OTP', OtpSchema);
+
+// Nodemailer Setup
+const nodemailer = require('nodemailer');
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: process.env.EMAIL_USER || "yourgmail@gmail.com",
+        pass: process.env.EMAIL_PASS || "app_password"
+    }
+});
 const User = mongoose.model('User', UserSchema);
 
 const ComplaintSchema = new mongoose.Schema({
@@ -248,6 +265,67 @@ app.get('/api/predictions', async (req, res) => {
 });
 
 // Auth
+app.post('/api/auth/send-otp', async (req, res) => {
+    try {
+        const { email } = req.body;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const isEmail = emailRegex.test(email);
+
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 mins
+
+        await OTP.deleteMany({ email });
+        await OTP.create({ email, otp: otpCode, expiresAt });
+
+        if (isEmail) {
+            try {
+                await transporter.sendMail({
+                    from: process.env.EMAIL_USER || "yourgmail@gmail.com",
+                    to: email,
+                    subject: "Smart City Verification Code",
+                    text: `Your OTP is ${otpCode}. It expires in 5 minutes.`
+                });
+                console.log(`[OTP] Sent to ${email}: ${otpCode}`);
+            } catch(e) {
+                console.error("Nodemailer error: ", e.message);
+                console.log(`[SIMULATED OTP] because email config failed. OTP for ${email}: ${otpCode}`);
+            }
+        } else {
+            console.log(`[SIMULATED SMS OTP] for Phone ${email}: ${otpCode}`);
+        }
+
+        res.json({ success: true, message: 'OTP sent successfully' });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to send OTP' });
+    }
+});
+
+app.post('/api/auth/verify-otp', async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+        const stored = await OTP.findOne({ email });
+
+        if (!stored) {
+            return res.json({ success: false, message: 'No OTP requested' });
+        }
+
+        if (new Date() > stored.expiresAt) {
+            return res.json({ success: false, message: 'OTP has expired' });
+        }
+
+        if (stored.otp !== otp) {
+            return res.json({ success: false, message: 'Invalid OTP' });
+        }
+
+        // OTP is valid
+        await OTP.deleteMany({ email });
+        res.json({ success: true, message: 'OTP verified' });
+    } catch (e) {
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
 app.post('/api/auth/register', async (req, res) => {
     try {
         const { name, email, password, faceData } = req.body;
