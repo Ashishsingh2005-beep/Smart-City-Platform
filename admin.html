@@ -214,6 +214,54 @@
                 </div>
             </div>
 
+            <!-- Registered Users Section -->
+            <div class="recent-complaints" style="margin-top: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3><i class="fa-solid fa-users"></i> Registered Users <span id="userCount" style="font-size: 0.85rem; color: var(--primary-accent); font-weight: 400;"></span></h3>
+                </div>
+                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Email / Phone</th>
+                                <th>Role</th>
+                                <th>Points</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr><td colspan="5" style="text-align:center;">Loading users...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- User Sign-in Logs Section -->
+            <div class="recent-complaints" style="margin-top: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3><i class="fa-solid fa-right-to-bracket"></i> User Sign-in Logs <span id="loginLogCount" style="font-size: 0.85rem; color: var(--primary-accent); font-weight: 400;"></span></h3>
+                </div>
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>User</th>
+                                <th>Email / Phone</th>
+                                <th>Role</th>
+                                <th>Method</th>
+                                <th>Date & Time</th>
+                                <th>IP Address</th>
+                            </tr>
+                        </thead>
+                        <tbody id="loginLogsBody">
+                            <tr><td colspan="7" style="text-align:center;">Loading login history...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- System Logs Section -->
             <div id="logs" class="recent-complaints" style="margin-top: 2rem;">
                 <h3><i class="fa-solid fa-list-ul"></i> Live System Activity</h3>
@@ -700,6 +748,57 @@
                 }
             };
             loadBlockchain();
+
+            // Load Registered Users
+            const loadUsers = async () => {
+                try {
+                    const users = await App.api.get('/auth/users');
+                    const tbody = document.getElementById('usersTableBody');
+                    document.getElementById('userCount').innerText = `(${users.length} total)`;
+                    if (users.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No users registered yet.</td></tr>';
+                    } else {
+                        tbody.innerHTML = users.map((u, i) => {
+                            const roleBadge = u.role === 'admin' ? 'background:#fee2e2;color:#991b1b;' : (u.role === 'officer' ? 'background:#dbeafe;color:#1e40af;' : 'background:#dcfce7;color:#16a34a;');
+                            return `<tr>
+                                <td>${i + 1}</td>
+                                <td>${u.name || 'N/A'}</td>
+                                <td>${u.email}</td>
+                                <td><span class="status-badge" style="${roleBadge} padding:2px 8px; border-radius:4px; font-size:0.8rem;">${u.role}</span></td>
+                                <td>${u.points || 0}</td>
+                            </tr>`;
+                        }).join('');
+                    }
+                } catch(e) { console.error(e); }
+            };
+            loadUsers();
+
+            // Load Login Logs
+            const loadLoginLogs = async () => {
+                try {
+                    const logs = await App.api.get('/auth/login-logs');
+                    const tbody = document.getElementById('loginLogsBody');
+                    document.getElementById('loginLogCount').innerText = `(${logs.length} records)`;
+                    if (logs.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No login records yet.</td></tr>';
+                    } else {
+                        tbody.innerHTML = logs.map((l, i) => {
+                            const methodIcon = l.method === 'face' ? '<i class="fa-solid fa-face-smile" style="color:#8b5cf6;"></i> Face ID' : '<i class="fa-solid fa-key" style="color:#f59e0b;"></i> Password';
+                            const roleBadge = l.role === 'admin' ? 'background:#fee2e2;color:#991b1b;' : (l.role === 'officer' ? 'background:#dbeafe;color:#1e40af;' : 'background:#dcfce7;color:#16a34a;');
+                            return `<tr>
+                                <td>${i + 1}</td>
+                                <td>${l.userName || 'N/A'}</td>
+                                <td>${l.email}</td>
+                                <td><span class="status-badge" style="${roleBadge} padding:2px 8px; border-radius:4px; font-size:0.8rem;">${l.role}</span></td>
+                                <td>${methodIcon}</td>
+                                <td>${new Date(l.loginTime).toLocaleString()}</td>
+                                <td style="font-family: monospace; font-size: 0.8rem;">${l.ip || 'N/A'}</td>
+                            </tr>`;
+                        }).join('');
+                    }
+                } catch(e) { console.error(e); }
+            };
+            loadLoginLogs();
         });
 
         function downloadAdminPDF() {

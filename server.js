@@ -66,6 +66,18 @@ const OtpSchema = new mongoose.Schema({
 });
 const OTP = mongoose.model('OTP', OtpSchema);
 
+// Login Logs Schema
+const LoginLogSchema = new mongoose.Schema({
+    userName: String,
+    email: String,
+    role: String,
+    method: { type: String, default: 'password' }, // 'password' or 'face'
+    loginTime: { type: Date, default: Date.now },
+    ip: String,
+    userAgent: String
+});
+const LoginLog = mongoose.model('LoginLog', LoginLogSchema);
+
 // Nodemailer Setup
 const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
@@ -357,6 +369,17 @@ app.post('/api/auth/login', async (req, res) => {
         const user = await User.findOne({ email, password });
 
         if (user) {
+            // Save login log
+            await LoginLog.create({
+                userName: user.name,
+                email: user.email,
+                role: user.role,
+                method: 'password',
+                ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+                userAgent: req.headers['user-agent']
+            });
+            console.log(`[LOGIN] ${user.name} (${user.email}) signed in`);
+
             const token = jwt.sign({ email: user.email, role: user.role, name: user.name || 'Citizen' }, SECRET_KEY, { expiresIn: '1h' });
             res.json({
                 success: true,
@@ -374,6 +397,26 @@ app.post('/api/auth/login', async (req, res) => {
         }
     } catch (e) {
         res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Get all login logs (Admin only)
+app.get('/api/auth/login-logs', async (req, res) => {
+    try {
+        const logs = await LoginLog.find().sort({ loginTime: -1 }).limit(100);
+        res.json(logs);
+    } catch (e) {
+        res.status(500).json([]);
+    }
+});
+
+// Get all registered users (Admin only)
+app.get('/api/auth/users', async (req, res) => {
+    try {
+        const users = await User.find({}, 'name email role points').sort({ name: 1 });
+        res.json(users);
+    } catch (e) {
+        res.status(500).json([]);
     }
 });
 
@@ -424,6 +467,18 @@ app.post('/api/auth/face-login', async (req, res) => {
 
         if (bestMatch && minDistance < THRESHOLD) {
             const user = bestMatch;
+
+            // Save login log for face login
+            await LoginLog.create({
+                userName: user.name,
+                email: user.email,
+                role: user.role,
+                method: 'face',
+                ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+                userAgent: req.headers['user-agent']
+            });
+            console.log(`[FACE LOGIN] ${user.name} (${user.email}) signed in via Face ID`);
+
             const token = jwt.sign({ email: user.email, role: user.role, name: user.name || 'Citizen' }, SECRET_KEY, { expiresIn: '1h' });
             res.json({
                 success: true,
