@@ -108,6 +108,7 @@ const ComplaintSchema = new mongoose.Schema({
     confidence: Number,
     adminReply: String,
     history: Array,
+    phone: String,
     created_at: { type: Date, default: Date.now },
     date: String,
     timestamp: { type: Number, default: Date.now }

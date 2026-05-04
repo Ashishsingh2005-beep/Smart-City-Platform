@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard | Smart City</title>
+    <title>Admin Dashboard | Smart Complaint</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -18,7 +18,7 @@
     <nav class="navbar">
         <div class="logo">
             <a href="index.html" class="logo">
-                <i class="fa-solid fa-city"></i> Smart<span>City</span>
+                <i class="fa-solid fa-city"></i> Smart<span>Complaint</span>
                 <span class="status-badge status-open"
                     style="font-size: 0.8rem; padding: 2px 8px; margin-left:8px;">ADMIN</span>
             </a>
@@ -631,14 +631,15 @@
                 content.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <div>
-                            <p><b style="color:var(--primary-accent)">ID:</b> ${c.id}</p>
-                            <p><b style="color:var(--text-muted)">Reported By:</b> ${c.userName}</p>
-                            <p><b style="color:var(--text-muted)">Date:</b> ${c.date}</p>
-                        </div>
-                        <div style="text-align:right;">
-                             <span class="status-badge status-${c.status}">${c.status.toUpperCase()}</span>
-                        </div>
-                    </div>
+                             <p><b style="color:var(--primary-accent)">ID:</b> ${c.id}</p>
+                             <p><b style="color:var(--text-muted)">Reported By:</b> ${c.userName}</p>
+                             <p><b style="color:var(--text-muted)">Phone:</b> <a href="tel:${c.phone || ''}" style="color: var(--primary-accent); text-decoration: none;">${c.phone || 'N/A'}</a></p>
+                             <p><b style="color:var(--text-muted)">Date:</b> ${c.date}</p>
+                         </div>
+                         <div style="text-align:right;">
+                              <span class="status-badge status-${c.status}">${c.status.toUpperCase()}</span>
+                         </div>
+                     </div>
                     
                     <hr style="border-color: var(--glass-border); margin: 15px 0;">
                     

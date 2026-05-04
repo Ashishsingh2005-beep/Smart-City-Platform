@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard | Smart City</title>
+    <title>Dashboard | Smart Complaint</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -35,7 +35,7 @@
         <div class="logo">
             <a href="index.html"
                 style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
-                <i class="fa-solid fa-city"></i> Smart<span>City</span>
+                <i class="fa-solid fa-city"></i> Smart<span>Complaint</span>
             </a>
         </div>
         <div class="auth-buttons">
@@ -187,10 +187,14 @@
                     Priority)
                 </div>
 
-                <div class="form-group">
-                    <label>Subject</label>
-                    <input type="text" id="compSubject" placeholder="Brief subject" required>
-                </div>
+                    <div class="form-group">
+                        <label>Subject</label>
+                        <input type="text" id="compSubject" placeholder="Brief subject" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone Number (Admin will contact you if needed)</label>
+                        <input type="tel" id="compPhone" placeholder="Enter 10-digit mobile number" required pattern="[0-9]{10}">
+                    </div>
                     <div class="form-group">
                         <label>Physical Address / Landmark</label>
                         <input type="text" id="compLocation" placeholder="e.g. Sector 4, Near Metro Station" required>
@@ -302,6 +306,7 @@
 
                 const category = document.getElementById('compCategory').value;
                 const subject = document.getElementById('compSubject').value;
+                const phone = document.getElementById('compPhone').value;
                 const locationStr = document.getElementById('compLocation').value;
                 const description = document.getElementById('compDesc').value;
                 const imageFile = document.getElementById('compImage').files[0];
@@ -322,6 +327,7 @@
                 const result = await App.complaints.create({ 
                     category, 
                     subject, 
+                    phone,
                     location: locationStr, 
                     description, 
                     image: imageData,

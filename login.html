@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | Smart City</title>
+    <title>Login | Smart Complaint</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
@@ -55,7 +55,7 @@
         <!-- Step 1: Role Selection -->
         <div id="roleSelection" class="auth-card" style="max-width: 800px; width: 95%;">
             <h2 style="text-align: center; margin-bottom: 10px;">Select Your Portal</h2>
-            <p style="text-align: center; color: var(--text-light); margin-bottom: 40px;">Choose your entry point to the Smart City ecosystem.</p>
+            <p style="text-align: center; color: var(--text-light); margin-bottom: 40px;">Choose your entry point to the Smart Complaint ecosystem.</p>
             
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px;">
                 <!-- Citizen Card -->
@@ -261,19 +261,19 @@
                 icon.innerHTML = '<i class="fa-solid fa-user-gear"></i>';
                 icon.style.background = 'rgba(244, 63, 94, 0.1)';
                 icon.style.color = '#f43f5e';
-                emailInput.placeholder = 'admin@smartcity.com';
+                emailInput.placeholder = 'admin@smartcomplaint.com';
             } else if (role === 'officer') {
                 title.innerText = "Officer Portal Login";
                 icon.innerHTML = '<i class="fa-solid fa-user-shield"></i>';
                 icon.style.background = 'rgba(99, 102, 241, 0.1)';
                 icon.style.color = '#6366f1';
-                emailInput.placeholder = 'officer@smartcity.com';
+                emailInput.placeholder = 'officer@smartcomplaint.com';
             } else {
                 title.innerText = "Citizen Portal Login";
                 icon.innerHTML = '<i class="fa-solid fa-user"></i>';
                 icon.style.background = 'rgba(6, 182, 212, 0.1)';
                 icon.style.color = '#06b6d4';
-                emailInput.placeholder = 'citizen@smartcity.com';
+                emailInput.placeholder = 'citizen@smartcomplaint.com';
             }
         };
 
