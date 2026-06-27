@@ -247,6 +247,7 @@
         App.i18n.init();
 
         window.selectRole = (role) => {
+            window.currentSelectedRole = role;
             const selection = document.getElementById('roleSelection');
             const form = document.getElementById('loginFormCard');
             const title = document.getElementById('portalTitle');
@@ -295,8 +296,15 @@
             console.log("Login result:", result);
 
             if (result.success) {
-                // Fix: result.user.role instead of result.role
                 const role = result.user.role;
+                if (role !== window.currentSelectedRole) {
+                    const err = document.getElementById('errorMsg');
+                    err.innerText = `Access Denied: This account does not have ${window.currentSelectedRole} privileges.`;
+                    err.style.display = 'block';
+                    localStorage.removeItem('sc_current_user');
+                    localStorage.removeItem('sc_auth_token');
+                    return;
+                }
                 if (role === 'admin') window.location.href = 'admin.html';
                 else if (role === 'officer') window.location.href = 'officer.html';
                 else window.location.href = 'dashboard.html';
@@ -383,7 +391,7 @@
             status.innerHTML = "<i class='fa-solid fa-microchip fa-spin'></i> Running cross-reference against blockchain vault...";
 
             setTimeout(async () => {
-                const result = await App.auth.faceLogin(faceDataJSON);
+                const result = await App.auth.faceLogin(faceDataJSON, window.currentSelectedRole);
 
                 if (result.success) {
                     hudStatus.innerText = "MATCH FOUND";

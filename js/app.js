@@ -415,9 +415,9 @@ const App = {
             }
         },
 
-        faceLogin: async (faceData) => {
+        faceLogin: async (faceData, expectedRole = null) => {
             try {
-                const result = await App.api.post('/auth/face-login', { faceData });
+                const result = await App.api.post('/auth/face-login', { faceData, expectedRole });
                 if (result.success) {
                     App.store.setCurrentUser(result.user);
                     if (result.token) localStorage.setItem('sc_auth_token', result.token);

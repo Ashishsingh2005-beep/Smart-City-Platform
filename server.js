@@ -671,7 +671,7 @@ const euclideanDistance = (arr1, arr2) => {
 
 app.post('/api/auth/face-login', async (req, res) => {
     try {
-        const { faceData } = req.body;
+        const { faceData, expectedRole } = req.body;
         let loginDescriptor;
         try {
             loginDescriptor = JSON.parse(faceData);
@@ -683,7 +683,12 @@ app.post('/api/auth/face-login', async (req, res) => {
             return res.json({ success: false, message: 'Invalid face descriptor format. Must be a 128-dimensional array.' });
         }
 
-        const users = await User.find({ faceData: { $ne: null } });
+        const query = { faceData: { $ne: null } };
+        if (expectedRole) {
+            query.role = expectedRole;
+        }
+
+        const users = await User.find(query);
 
         // Strict matching parameters
         const MIN_THRESHOLD = 0.42;
