@@ -560,7 +560,30 @@ app.post('/api/auth/register', async (req, res) => {
         const existing = await User.findOne({ email });
 
         if (existing) {
+            if (!existing.faceData && faceData) {
+                // If account exists (like seeded admin/officer) but has no face ID, bind it
+                existing.faceData = faceData;
+                if (password && password === existing.password) {
+                    // Password matches, update
+                    await existing.save();
+                    return res.json({ success: true, message: 'Face ID linked to your existing account!' });
+                } else if (!password) {
+                    // Allowed from biometric signup flow
+                    await existing.save();
+                    return res.json({ success: true, message: 'Face ID linked to your existing account!' });
+                } else {
+                    return res.json({ success: false, message: 'Invalid password for the existing account.' });
+                }
+            }
             return res.json({ success: false, message: 'Account with this Email/Phone already registered' });
+        }
+
+        // Auto-assign role based on email context for development ease
+        let role = 'citizen';
+        if (email.toLowerCase().includes('admin')) {
+            role = 'admin';
+        } else if (email.toLowerCase().includes('officer')) {
+            role = 'officer';
         }
 
         const newUser = new User({
@@ -568,7 +591,7 @@ app.post('/api/auth/register', async (req, res) => {
             email,
             password,
             faceData,
-            role: 'citizen',
+            role: role,
             points: 0
         });
 
