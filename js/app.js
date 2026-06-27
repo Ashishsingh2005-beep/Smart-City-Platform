@@ -6,7 +6,10 @@
 const App = {
     // --- Backend API Integration ---
     api: {
-        baseUrl: window.location.protocol === 'file:' ? 'http://localhost:3000/api' : '/api',
+        baseUrl: (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? (window.location.port === '3000' ? '/api' : 'http://localhost:3000/api')
+            : (window.location.protocol === 'file:' ? 'http://localhost:3000/api' : '/api'),
+
 
         getHeaders() {
             const headers = { 'Content-Type': 'application/json' };

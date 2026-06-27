@@ -27,26 +27,210 @@ app.use(express.static(__dirname)); // Serve frontend files
 const mongoose = require('mongoose');
 
 // --- DATABASE CONFIGURATION ---
-// Updated with the user's provided Atlas URI, converted to direct replica set nodes to fix DNS SRV ECONNREFUSED
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://roy349647_db_user:Ashish123@ac-jnxgu0r-shard-00-00.3bpupnm.mongodb.net:27017,ac-jnxgu0r-shard-00-01.3bpupnm.mongodb.net:27017,ac-jnxgu0r-shard-00-02.3bpupnm.mongodb.net:27017/smartcity?ssl=true&replicaSet=atlas-a3mm6k-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
 
-console.log('Attempting to connect to MongoDB...');
+const DATA_DIR = path.join(__dirname, 'data');
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
 
-mongoose.connect(MONGODB_URI)
-.then(() => {
-    console.log('🚀 Successfully Connected to MongoDB Cloud');
-    migrateData(); 
-    
-    // Automatically open the website in the default browser when the server starts (Windows)
-    const { exec } = require('child_process');
-    exec('start http://localhost:3000');
-    console.log('🌐 Opening website in browser...');
-})
-.catch(err => {
-    console.error('❌ MongoDB Connection Error Details:');
-    console.error('Message:', err.message);
-});
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const COMPLAINTS_FILE = path.join(DATA_DIR, 'complaints.json');
+const BLOCKCHAIN_FILE = path.join(DATA_DIR, 'blockchain.json');
 
+const readData = (file) => {
+    if (!fs.existsSync(file)) return [];
+    try { return JSON.parse(fs.readFileSync(file, 'utf8')) || []; }
+    catch (e) { return []; }
+};
+
+const writeData = (file, data) => {
+    try {
+        fs.writeFileSync(file, JSON.stringify(data, null, 2));
+        return true;
+    } catch (e) {
+        return false;
+    }
+};
+
+// --- LOCAL JSON MOCK MONGOOSE MODELS ---
+function createMockModel(fileName, defaultData = []) {
+    const filePath = path.join(DATA_DIR, fileName);
+    if (!fs.existsSync(filePath)) {
+        writeData(filePath, defaultData);
+    }
+
+    const read = () => readData(filePath);
+    const write = (data) => writeData(filePath, data);
+
+    const Model = function(properties) {
+        Object.assign(this, properties);
+        this.save = async () => {
+            const data = read();
+            const idKey = this.id ? 'id' : (this.email ? 'email' : null);
+            if (idKey) {
+                const idx = data.findIndex(item => item[idKey] === this[idKey]);
+                if (idx !== -1) {
+                    data[idx] = { ...this };
+                    delete data[idx].save;
+                    write(data);
+                    return this;
+                }
+            }
+            const cleanCopy = { ...this };
+            delete cleanCopy.save;
+            data.push(cleanCopy);
+            write(data);
+            return this;
+        };
+    };
+
+    Model.countDocuments = async () => {
+        return read().length;
+    };
+
+    Model.insertMany = async (items) => {
+        const data = read();
+        data.push(...items);
+        write(data);
+        return items;
+    };
+
+    Model.find = (query = {}) => {
+        let data = read();
+        
+        if (Object.keys(query).length > 0) {
+            data = data.filter(item => {
+                for (let key in query) {
+                    const val = query[key];
+                    if (val && typeof val === 'object') {
+                        if ('$ne' in val) {
+                            if (item[key] === val['$ne']) return false;
+                        }
+                    } else {
+                        if (item[key] !== val) return false;
+                    }
+                }
+                return true;
+            });
+        }
+
+        const chain = {
+            select: () => chain,
+            sort: (sortObj) => {
+                const key = Object.keys(sortObj)[0];
+                const order = sortObj[key];
+                data.sort((a, b) => {
+                    if (a[key] < b[key]) return -1 * order;
+                    if (a[key] > b[key]) return 1 * order;
+                    return 0;
+                });
+                return chain;
+            },
+            limit: (num) => {
+                data = data.slice(0, num);
+                return chain;
+            },
+            then: (resolve) => resolve(data)
+        };
+
+        const result = [...data];
+        Object.assign(result, chain);
+        return result;
+    };
+
+    Model.findOne = (query = {}) => {
+        let data = read();
+        let found = data.filter(item => {
+            for (let key in query) {
+                const val = query[key];
+                if (item[key] !== val) return false;
+            }
+            return true;
+        });
+
+        const chain = {
+            sort: (sortObj) => {
+                const key = Object.keys(sortObj)[0];
+                const order = sortObj[key];
+                found.sort((a, b) => {
+                    if (a[key] < b[key]) return -1 * order;
+                    if (a[key] > b[key]) return 1 * order;
+                    return 0;
+                });
+                return chain;
+            },
+            then: (resolve) => {
+                const doc = found[0] ? new Model(found[0]) : null;
+                resolve(doc);
+            }
+        };
+
+        return chain;
+    };
+
+    Model.findOneAndUpdate = async (query, update) => {
+        const data = read();
+        const idx = data.findIndex(item => {
+            for (let key in query) {
+                if (item[key] !== query[key]) return false;
+            }
+            return true;
+        });
+
+        if (idx !== -1) {
+            let item = data[idx];
+            if (update.$inc) {
+                for (let key in update.$inc) {
+                    item[key] = (item[key] || 0) + update.$inc[key];
+                }
+            }
+            if (update.$set) {
+                for (let key in update.$set) {
+                    item[key] = update.$set[key];
+                }
+            }
+            data[idx] = item;
+            write(data);
+            return new Model(item);
+        }
+        return null;
+    };
+
+    Model.deleteMany = async (query = {}) => {
+        let data = read();
+        data = data.filter(item => {
+            for (let key in query) {
+                if (item[key] === query[key]) return false;
+            }
+            return true;
+        });
+        write(data);
+        return { deletedCount: data.length };
+    };
+
+    Model.deleteOne = async (query = {}) => {
+        const data = read();
+        const idx = data.findIndex(item => {
+            for (let key in query) {
+                if (item[key] !== query[key]) return false;
+            }
+            return true;
+        });
+        if (idx !== -1) {
+            data.splice(idx, 1);
+            write(data);
+            return { deletedCount: 1 };
+        }
+        return { deletedCount: 0 };
+    };
+
+    Model.create = async (item) => {
+        const inst = new Model(item);
+        await inst.save();
+        return inst;
+    };
+
+    return Model;
+}
 
 // --- DATA MODELS (Schemas) ---
 const UserSchema = new mongoose.Schema({
@@ -64,30 +248,16 @@ const OtpSchema = new mongoose.Schema({
     otp: { type: String, required: true },
     expiresAt: { type: Date, required: true }
 });
-const OTP = mongoose.model('OTP', OtpSchema);
 
-// Login Logs Schema
 const LoginLogSchema = new mongoose.Schema({
     userName: String,
     email: String,
     role: String,
-    method: { type: String, default: 'password' }, // 'password' or 'face'
+    method: { type: String, default: 'password' },
     loginTime: { type: Date, default: Date.now },
     ip: String,
     userAgent: String
 });
-const LoginLog = mongoose.model('LoginLog', LoginLogSchema);
-
-// Nodemailer Setup
-const nodemailer = require('nodemailer');
-const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-        user: process.env.EMAIL_USER || "yourgmail@gmail.com",
-        pass: process.env.EMAIL_PASS || "app_password"
-    }
-});
-const User = mongoose.model('User', UserSchema);
 
 const ComplaintSchema = new mongoose.Schema({
     complaint_id: String,
@@ -113,7 +283,6 @@ const ComplaintSchema = new mongoose.Schema({
     date: String,
     timestamp: { type: Number, default: Date.now }
 });
-const Complaint = mongoose.model('Complaint', ComplaintSchema);
 
 const BlockSchema = new mongoose.Schema({
     index: Number,
@@ -122,19 +291,63 @@ const BlockSchema = new mongoose.Schema({
     previousHash: String,
     hash: String
 });
-const Block = mongoose.model('Block', BlockSchema);
 
-// --- JSON DB Fallback (for Migration only) ---
-const DATA_DIR = path.join(__dirname, 'data');
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-const COMPLAINTS_FILE = path.join(DATA_DIR, 'complaints.json');
-const BLOCKCHAIN_FILE = path.join(DATA_DIR, 'blockchain.json');
+// Let variables so they can be reassigned to mock models in case of fallback
+let User = mongoose.model('User', UserSchema);
+let OTP = mongoose.model('OTP', OtpSchema);
+let LoginLog = mongoose.model('LoginLog', LoginLogSchema);
+let Complaint = mongoose.model('Complaint', ComplaintSchema);
+let Block = mongoose.model('Block', BlockSchema);
 
-const readData = (file) => {
-    if (!fs.existsSync(file)) return [];
-    try { return JSON.parse(fs.readFileSync(file, 'utf8')) || []; }
-    catch (e) { return []; }
-};
+function fallbackToLocalJSON(err) {
+    console.error('❌ MongoDB Connection Error Details:');
+    console.error('Message:', err ? err.message : 'Unknown Connection Error');
+    console.log('⚠️ Falling back to local JSON database...');
+
+    User = createMockModel('users.json');
+    OTP = createMockModel('otps.json');
+    LoginLog = createMockModel('login_logs.json');
+    Complaint = createMockModel('complaints.json');
+    Block = createMockModel('blockchain.json');
+
+    // Run initialization tasks
+    setTimeout(async () => {
+        try {
+            await smartCityChain.init();
+            await seedData();
+            await migrateData();
+            console.log('✅ Local JSON Database Ready');
+        } catch (e) {
+            console.error('Error during local JSON DB init:', e);
+        }
+    }, 100);
+
+    // Automatically open browser on Windows
+    const { exec } = require('child_process');
+    exec('start http://localhost:3000');
+    console.log('🌐 Opening website in browser...');
+}
+
+console.log('Attempting to connect to MongoDB...');
+mongoose.connect(MONGODB_URI)
+.then(async () => {
+    console.log('🚀 Successfully Connected to MongoDB Cloud');
+    try {
+        await smartCityChain.init();
+        await seedData();
+        await migrateData();
+    } catch (dbInitErr) {
+        console.error('Error seeding/migrating cloud database:', dbInitErr);
+    }
+    
+    // Automatically open the website in the default browser when the server starts (Windows)
+    const { exec } = require('child_process');
+    exec('start http://localhost:3000');
+    console.log('🌐 Opening website in browser...');
+})
+.catch(err => {
+    fallbackToLocalJSON(err);
+});
 
 // --- MIGRATION UTILITY ---
 async function migrateData() {
@@ -204,7 +417,8 @@ class Blockchain {
 }
 
 const smartCityChain = new Blockchain();
-smartCityChain.init();
+// smartCityChain.init(); // Run asynchronously after connection / fallback is ready
+
 
 
 // --- Reward System Helper (DB Powered) ---
@@ -247,7 +461,8 @@ const seedData = async () => {
         console.log('✅ Database seeded with initial users.');
     }
 };
-seedData();
+// seedData(); // Run asynchronously after connection / fallback is ready
+
 
 // --- Routes ---
 
