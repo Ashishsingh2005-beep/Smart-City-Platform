@@ -194,27 +194,233 @@
         </div>
     </section>
 
-    <!-- How it Works -->
-    <section id="how-it-works" class="features" style="background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(20px);">
+    <!-- How it Works - Full Workflow Pipeline -->
+    <section id="how-it-works" class="features" style="background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(20px); padding: 6rem 5%;">
         <div class="section-header">
-            <h2 style="color: white;">The <span>Digital Evolution</span></h2>
-            <p style="color: rgba(255,255,255,0.7);">Seamless transparency from submission to resolution.</p>
+            <h2 style="color: white;">Complete <span>Workflow Pipeline</span></h2>
+            <p style="color: rgba(255,255,255,0.7);">End-to-end transparency from citizen report to final resolution — every step tracked and verified.</p>
         </div>
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4rem; text-align: center;">
-            <div class="step">
-                <div class="step-num">01</div>
-                <h3>Citizen Reporting</h3>
-                <p>Pinpoint urban issues with sub-meter accuracy and high-resolution media evidence.</p>
+
+        <style>
+            .workflow-pipeline {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 0;
+                position: relative;
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+            .workflow-node {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                position: relative;
+                flex: 0 0 auto;
+                width: 120px;
+                text-align: center;
+                animation: nodeAppear 0.6s ease forwards;
+                opacity: 0;
+            }
+            .workflow-node:nth-child(1) { animation-delay: 0.1s; }
+            .workflow-node:nth-child(2) { animation-delay: 0.2s; }
+            .workflow-node:nth-child(3) { animation-delay: 0.3s; }
+            .workflow-node:nth-child(4) { animation-delay: 0.4s; }
+            .workflow-node:nth-child(5) { animation-delay: 0.5s; }
+            .workflow-node:nth-child(6) { animation-delay: 0.6s; }
+            .workflow-node:nth-child(7) { animation-delay: 0.7s; }
+            .workflow-node:nth-child(8) { animation-delay: 0.8s; }
+            .workflow-node:nth-child(9) { animation-delay: 0.9s; }
+            .workflow-node:nth-child(10) { animation-delay: 1.0s; }
+            @keyframes nodeAppear {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .workflow-icon {
+                width: 64px;
+                height: 64px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.4rem;
+                color: white;
+                position: relative;
+                z-index: 2;
+                box-shadow: 0 0 20px rgba(6, 182, 212, 0.3), 0 8px 32px rgba(0, 0, 0, 0.3);
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+            .workflow-icon:hover {
+                transform: scale(1.15);
+                box-shadow: 0 0 30px rgba(6, 182, 212, 0.6), 0 12px 40px rgba(0, 0, 0, 0.4);
+            }
+            .workflow-node h4 {
+                color: white;
+                font-size: 0.8rem;
+                font-weight: 600;
+                margin-top: 12px;
+                letter-spacing: 0.5px;
+            }
+            .workflow-node p {
+                color: rgba(255,255,255,0.5);
+                font-size: 0.7rem;
+                margin-top: 4px;
+                line-height: 1.4;
+            }
+            .workflow-arrow {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 40px;
+                height: 64px;
+                color: rgba(6, 182, 212, 0.5);
+                font-size: 1.2rem;
+                flex-shrink: 0;
+                animation: arrowPulse 2s ease-in-out infinite;
+            }
+            @keyframes arrowPulse {
+                0%, 100% { opacity: 0.4; }
+                50% { opacity: 1; color: #06b6d4; }
+            }
+            .workflow-step-num {
+                position: absolute;
+                top: -8px;
+                right: -4px;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                background: #06b6d4;
+                color: #0f172a;
+                font-size: 0.65rem;
+                font-weight: 800;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 3;
+            }
+            @media (max-width: 900px) {
+                .workflow-pipeline {
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 0.5rem;
+                }
+                .workflow-arrow {
+                    transform: rotate(90deg);
+                    width: 64px;
+                    height: 30px;
+                }
+                .workflow-node { width: 160px; }
+            }
+        </style>
+
+        <div class="workflow-pipeline">
+            <!-- 1. Citizen -->
+            <div class="workflow-node">
+                <div class="workflow-icon" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+                    <span class="workflow-step-num">1</span>
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <h4>Citizen</h4>
+                <p>Registers & logs in</p>
             </div>
-            <div class="step">
-                <div class="step-num">02</div>
-                <h3>AI Stratification</h3>
-                <p>Neural networks prioritize and dispatch the exact response team needed in seconds.</p>
+            <div class="workflow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+            <!-- 2. Complaint -->
+            <div class="workflow-node">
+                <div class="workflow-icon" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
+                    <span class="workflow-step-num">2</span>
+                    <i class="fa-solid fa-file-pen"></i>
+                </div>
+                <h4>Complaint</h4>
+                <p>Files issue with evidence</p>
             </div>
-            <div class="step">
-                <div class="step-num">03</div>
-                <h3>Verified Resolution</h3>
-                <p>Track live team movement and receive cryptographic proof of completion.</p>
+            <div class="workflow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+            <!-- 3. Verification -->
+            <div class="workflow-node">
+                <div class="workflow-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                    <span class="workflow-step-num">3</span>
+                    <i class="fa-solid fa-magnifying-glass-chart"></i>
+                </div>
+                <h4>Verification</h4>
+                <p>AI validates & classifies</p>
+            </div>
+            <div class="workflow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+            <!-- 4. Department -->
+            <div class="workflow-node">
+                <div class="workflow-icon" style="background: linear-gradient(135deg, #ec4899, #db2777);">
+                    <span class="workflow-step-num">4</span>
+                    <i class="fa-solid fa-building-columns"></i>
+                </div>
+                <h4>Department</h4>
+                <p>Routes to right dept</p>
+            </div>
+            <div class="workflow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+            <!-- 5. Officer -->
+            <div class="workflow-node">
+                <div class="workflow-icon" style="background: linear-gradient(135deg, #f43f5e, #e11d48);">
+                    <span class="workflow-step-num">5</span>
+                    <i class="fa-solid fa-user-tie"></i>
+                </div>
+                <h4>Officer</h4>
+                <p>Assigned to investigate</p>
+            </div>
+            <div class="workflow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+            <!-- 6. Work Order -->
+            <div class="workflow-node">
+                <div class="workflow-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                    <span class="workflow-step-num">6</span>
+                    <i class="fa-solid fa-clipboard-list"></i>
+                </div>
+                <h4>Work Order</h4>
+                <p>Task created & scheduled</p>
+            </div>
+            <div class="workflow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+            <!-- 7. Progress -->
+            <div class="workflow-node">
+                <div class="workflow-icon" style="background: linear-gradient(135deg, #14b8a6, #0d9488);">
+                    <span class="workflow-step-num">7</span>
+                    <i class="fa-solid fa-bars-progress"></i>
+                </div>
+                <h4>Progress</h4>
+                <p>Live tracking updates</p>
+            </div>
+            <div class="workflow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+            <!-- 8. Resolution -->
+            <div class="workflow-node">
+                <div class="workflow-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                    <span class="workflow-step-num">8</span>
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <h4>Resolution</h4>
+                <p>Issue fixed & verified</p>
+            </div>
+            <div class="workflow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+            <!-- 9. Feedback -->
+            <div class="workflow-node">
+                <div class="workflow-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                    <span class="workflow-step-num">9</span>
+                    <i class="fa-solid fa-star"></i>
+                </div>
+                <h4>Feedback</h4>
+                <p>Citizen rates service</p>
+            </div>
+            <div class="workflow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+            <!-- 10. Reports -->
+            <div class="workflow-node">
+                <div class="workflow-icon" style="background: linear-gradient(135deg, #a855f7, #9333ea);">
+                    <span class="workflow-step-num">10</span>
+                    <i class="fa-solid fa-chart-column"></i>
+                </div>
+                <h4>Reports</h4>
+                <p>Analytics & blockchain</p>
             </div>
         </div>
     </section>
