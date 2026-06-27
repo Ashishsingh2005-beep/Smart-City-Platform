@@ -58,13 +58,24 @@ function createMockModel(fileName, defaultData = []) {
         writeData(filePath, defaultData);
     }
 
-    const read = () => readData(filePath);
-    const write = (data) => writeData(filePath, data);
+    let cache = null;
+
+    const read = () => {
+        if (cache === null) {
+            cache = readData(filePath);
+        }
+        return cache;
+    };
+
+    const write = (data) => {
+        cache = data;
+        writeData(filePath, data);
+    };
 
     const Model = function(properties) {
         Object.assign(this, properties);
         this.save = async () => {
-            const data = read();
+            const data = [...read()];
             const idKey = this.id ? 'id' : (this.email ? 'email' : null);
             if (idKey) {
                 const idx = data.findIndex(item => item[idKey] === this[idKey]);
@@ -88,7 +99,7 @@ function createMockModel(fileName, defaultData = []) {
     };
 
     Model.insertMany = async (items) => {
-        const data = read();
+        const data = [...read()];
         data.push(...items);
         write(data);
         return items;
@@ -111,10 +122,35 @@ function createMockModel(fileName, defaultData = []) {
                 }
                 return true;
             });
+        } else {
+            data = [...data];
         }
 
         const chain = {
-            select: () => chain,
+            select: (projection) => {
+                if (typeof projection === 'string') {
+                    const fields = projection.split(/\s+/).filter(Boolean);
+                    if (fields.length > 0) {
+                        if (fields[0].startsWith('-')) {
+                            const exclude = fields.map(f => f.substring(1));
+                            data = data.map(item => {
+                                const copy = { ...item };
+                                exclude.forEach(f => delete copy[f]);
+                                return copy;
+                            });
+                        } else {
+                            data = data.map(item => {
+                                const copy = {};
+                                fields.forEach(f => {
+                                    copy[f] = item[f];
+                                });
+                                return copy;
+                            });
+                        }
+                    }
+                }
+                return chain;
+            },
             sort: (sortObj) => {
                 const key = Object.keys(sortObj)[0];
                 const order = sortObj[key];
@@ -148,6 +184,30 @@ function createMockModel(fileName, defaultData = []) {
         });
 
         const chain = {
+            select: (projection) => {
+                if (typeof projection === 'string') {
+                    const fields = projection.split(/\s+/).filter(Boolean);
+                    if (fields.length > 0 && found.length > 0) {
+                        if (fields[0].startsWith('-')) {
+                            const exclude = fields.map(f => f.substring(1));
+                            found = found.map(item => {
+                                const copy = { ...item };
+                                exclude.forEach(f => delete copy[f]);
+                                return copy;
+                            });
+                        } else {
+                            found = found.map(item => {
+                                const copy = {};
+                                fields.forEach(f => {
+                                    copy[f] = item[f];
+                                });
+                                return copy;
+                            });
+                        }
+                    }
+                }
+                return chain;
+            },
             sort: (sortObj) => {
                 const key = Object.keys(sortObj)[0];
                 const order = sortObj[key];
@@ -168,7 +228,7 @@ function createMockModel(fileName, defaultData = []) {
     };
 
     Model.findOneAndUpdate = async (query, update) => {
-        const data = read();
+        const data = [...read()];
         const idx = data.findIndex(item => {
             for (let key in query) {
                 if (item[key] !== query[key]) return false;
@@ -177,7 +237,7 @@ function createMockModel(fileName, defaultData = []) {
         });
 
         if (idx !== -1) {
-            let item = data[idx];
+            let item = { ...data[idx] };
             if (update.$inc) {
                 for (let key in update.$inc) {
                     item[key] = (item[key] || 0) + update.$inc[key];
@@ -196,19 +256,20 @@ function createMockModel(fileName, defaultData = []) {
     };
 
     Model.deleteMany = async (query = {}) => {
-        let data = read();
-        data = data.filter(item => {
+        const data = read();
+        const beforeLen = data.length;
+        const filtered = data.filter(item => {
             for (let key in query) {
                 if (item[key] === query[key]) return false;
             }
             return true;
         });
-        write(data);
-        return { deletedCount: data.length };
+        write(filtered);
+        return { deletedCount: beforeLen - filtered.length };
     };
 
     Model.deleteOne = async (query = {}) => {
-        const data = read();
+        const data = [...read()];
         const idx = data.findIndex(item => {
             for (let key in query) {
                 if (item[key] !== query[key]) return false;
