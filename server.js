@@ -679,32 +679,57 @@ app.post('/api/auth/face-login', async (req, res) => {
             return res.json({ success: false, message: 'Invalid face data format' });
         }
 
+        if (!Array.isArray(loginDescriptor) || loginDescriptor.length !== 128) {
+            return res.json({ success: false, message: 'Invalid face descriptor format. Must be a 128-dimensional array.' });
+        }
+
         const users = await User.find({ faceData: { $ne: null } });
 
-        // Threshold for face-api.js (0.6 is typical, 0.55 is strict)
-        const THRESHOLD = 0.55; 
+        // Strict matching parameters
+        const MIN_THRESHOLD = 0.42;
+        const AVG_THRESHOLD = 0.48;
+        
         let bestMatch = null;
         let minDistance = 9999;
 
         users.forEach(u => {
             try {
                 const storedEmbeddings = JSON.parse(u.faceData);
+                if (!Array.isArray(storedEmbeddings)) return;
+
+                let sumDist = 0;
+                let validCount = 0;
+                let userMinDist = 9999;
+
                 // Compare with all stored embeddings for the user
                 for (let stored of storedEmbeddings) {
+                    if (!Array.isArray(stored) || stored.length !== 128) continue;
                     const dist = euclideanDistance(loginDescriptor, stored);
-                    if (dist < minDistance) {
-                        minDistance = dist;
-                        bestMatch = u;
+                    sumDist += dist;
+                    validCount++;
+                    if (dist < userMinDist) {
+                        userMinDist = dist;
+                    }
+                }
+
+                if (validCount > 0) {
+                    const avgDist = sumDist / validCount;
+                    // Candidate matches must satisfy both strict minimum and average similarity thresholds
+                    if (userMinDist < MIN_THRESHOLD && avgDist < AVG_THRESHOLD) {
+                        if (userMinDist < minDistance) {
+                            minDistance = userMinDist;
+                            bestMatch = u;
+                        }
                     }
                 }
             } catch (err) {
-                // Ignore old string hash accounts
+                // Ignore invalid or old formats safely
             }
         });
 
-        console.log(`[BIOMETRIC] Best Match Distance: ${minDistance.toFixed(3)} | Threshold: ${THRESHOLD}`);
+        console.log(`[BIOMETRIC] Best Match Distance: ${minDistance.toFixed(3)} | Required Min: ${MIN_THRESHOLD}`);
 
-        if (bestMatch && minDistance < THRESHOLD) {
+        if (bestMatch) {
             const user = bestMatch;
 
             // Save login log for face login
