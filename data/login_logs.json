@@ -1,0 +1,9 @@
+[
+  {
+    "userName": "System Admin",
+    "email": "admin@smartcity.com",
+    "role": "admin",
+    "method": "password",
+    "ip": "::1"
+  }
+]
