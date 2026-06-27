@@ -508,9 +508,22 @@
                 document.body.removeChild(link);
             });
 
-            render();
+            const refreshData = async () => {
+                try {
+                    await App.store.loadData();
+                    await Promise.all([
+                        typeof loadUsers === 'function' ? loadUsers() : Promise.resolve(),
+                        typeof loadLoginLogs === 'function' ? loadLoginLogs() : Promise.resolve(),
+                        typeof loadBlockchain === 'function' ? loadBlockchain() : Promise.resolve()
+                    ]);
+                    render();
+                } catch (e) {
+                    console.error("Refresh error:", e);
+                }
+            };
+            refreshData();
             // Live Update Logs & Re-render (filtered)
-            setInterval(() => render(), 5000);
+            setInterval(refreshData, 5000);
 
             // Event Listeners for Filters
             document.getElementById('filterCategory').addEventListener('change', render);
@@ -733,7 +746,7 @@
             };
 
             // Blockchain & Predictions
-            const loadBlockchain = async () => {
+            async function loadBlockchain() {
                 const chain = await App.api.get('/blockchain');
                 const tbody = document.getElementById('blockchainTableBody');
                 if (chain && chain.length > 0) {
@@ -747,59 +760,60 @@
                         </tr>
                     `).join('');
                 }
-            };
-            loadBlockchain();
+            }
 
             // Load Registered Users
-            const loadUsers = async () => {
+            async function loadUsers() {
                 try {
                     const users = await App.api.get('/auth/users');
                     const tbody = document.getElementById('usersTableBody');
-                    document.getElementById('userCount').innerText = `(${users.length} total)`;
-                    if (users.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No users registered yet.</td></tr>';
-                    } else {
-                        tbody.innerHTML = users.map((u, i) => {
-                            const roleBadge = u.role === 'admin' ? 'background:#fee2e2;color:#991b1b;' : (u.role === 'officer' ? 'background:#dbeafe;color:#1e40af;' : 'background:#dcfce7;color:#16a34a;');
-                            return `<tr>
-                                <td>${i + 1}</td>
-                                <td>${u.name || 'N/A'}</td>
-                                <td>${u.email}</td>
-                                <td><span class="status-badge" style="${roleBadge} padding:2px 8px; border-radius:4px; font-size:0.8rem;">${u.role}</span></td>
-                                <td>${u.points || 0}</td>
-                            </tr>`;
-                        }).join('');
+                    if (tbody) {
+                        document.getElementById('userCount').innerText = `(${users.length} total)`;
+                        if (users.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No users registered yet.</td></tr>';
+                        } else {
+                            tbody.innerHTML = users.map((u, i) => {
+                                const roleBadge = u.role === 'admin' ? 'background:#fee2e2;color:#991b1b;' : (u.role === 'officer' ? 'background:#dbeafe;color:#1e40af;' : 'background:#dcfce7;color:#16a34a;');
+                                return `<tr>
+                                    <td>${i + 1}</td>
+                                    <td>${u.name || 'N/A'}</td>
+                                    <td>${u.email}</td>
+                                    <td><span class="status-badge" style="${roleBadge} padding:2px 8px; border-radius:4px; font-size:0.8rem;">${u.role}</span></td>
+                                    <td>${u.points || 0}</td>
+                                </tr>`;
+                            }).join('');
+                        }
                     }
                 } catch(e) { console.error(e); }
-            };
-            loadUsers();
+            }
 
             // Load Login Logs
-            const loadLoginLogs = async () => {
+            async function loadLoginLogs() {
                 try {
                     const logs = await App.api.get('/auth/login-logs');
                     const tbody = document.getElementById('loginLogsBody');
-                    document.getElementById('loginLogCount').innerText = `(${logs.length} records)`;
-                    if (logs.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No login records yet.</td></tr>';
-                    } else {
-                        tbody.innerHTML = logs.map((l, i) => {
-                            const methodIcon = l.method === 'face' ? '<i class="fa-solid fa-face-smile" style="color:#8b5cf6;"></i> Face ID' : '<i class="fa-solid fa-key" style="color:#f59e0b;"></i> Password';
-                            const roleBadge = l.role === 'admin' ? 'background:#fee2e2;color:#991b1b;' : (l.role === 'officer' ? 'background:#dbeafe;color:#1e40af;' : 'background:#dcfce7;color:#16a34a;');
-                            return `<tr>
-                                <td>${i + 1}</td>
-                                <td>${l.userName || 'N/A'}</td>
-                                <td>${l.email}</td>
-                                <td><span class="status-badge" style="${roleBadge} padding:2px 8px; border-radius:4px; font-size:0.8rem;">${l.role}</span></td>
-                                <td>${methodIcon}</td>
-                                <td>${new Date(l.loginTime).toLocaleString()}</td>
-                                <td style="font-family: monospace; font-size: 0.8rem;">${l.ip || 'N/A'}</td>
-                            </tr>`;
-                        }).join('');
+                    if (tbody) {
+                        document.getElementById('loginLogCount').innerText = `(${logs.length} records)`;
+                        if (logs.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No login records yet.</td></tr>';
+                        } else {
+                            tbody.innerHTML = logs.map((l, i) => {
+                                const methodIcon = l.method === 'face' ? '<i class="fa-solid fa-face-smile" style="color:#8b5cf6;"></i> Face ID' : '<i class="fa-solid fa-key" style="color:#f59e0b;"></i> Password';
+                                const roleBadge = l.role === 'admin' ? 'background:#fee2e2;color:#991b1b;' : (l.role === 'officer' ? 'background:#dbeafe;color:#1e40af;' : 'background:#dcfce7;color:#16a34a;');
+                                return `<tr>
+                                    <td>${i + 1}</td>
+                                    <td>${l.userName || 'N/A'}</td>
+                                    <td>${l.email}</td>
+                                    <td><span class="status-badge" style="${roleBadge} padding:2px 8px; border-radius:4px; font-size:0.8rem;">${l.role}</span></td>
+                                    <td>${methodIcon}</td>
+                                    <td>${new Date(l.loginTime).toLocaleString()}</td>
+                                    <td style="font-family: monospace; font-size: 0.8rem;">${l.ip || 'N/A'}</td>
+                                </tr>`;
+                            }).join('');
+                        }
                     }
                 } catch(e) { console.error(e); }
-            };
-            loadLoginLogs();
+            }
         });
 
         function downloadAdminPDF() {
