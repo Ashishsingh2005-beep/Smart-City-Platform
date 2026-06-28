@@ -23,6 +23,7 @@ app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(__dirname)); // Serve frontend files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const mongoose = require('mongoose');
 
@@ -48,6 +49,61 @@ const writeData = (file, data) => {
         return true;
     } catch (e) {
         return false;
+    }
+};
+
+// Cloudinary integration setup
+let cloudinary = null;
+try {
+    cloudinary = require('cloudinary').v2;
+} catch (e) {
+    // Cloudinary SDK is optional
+}
+
+// Utility function to save base64 images to Cloudinary (if credentials exist) or local uploads folder
+const saveBase64Image = async (base64Str, prefix = 'img') => {
+    if (!base64Str || typeof base64Str !== 'string' || !base64Str.startsWith('data:image/')) return base64Str;
+
+    // 1. Try Cloudinary first if environment variables are set and package is available
+    if (cloudinary && process.env.CLOUDINARY_CLOUD_NAME) {
+        try {
+            cloudinary.config({
+                cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+                api_key: process.env.CLOUDINARY_API_KEY,
+                api_secret: process.env.CLOUDINARY_API_SECRET
+            });
+            const result = await cloudinary.uploader.upload(base64Str, {
+                folder: `smartcity/${prefix}`
+            });
+            if (result && result.secure_url) {
+                console.log(`[CLOUD STORAGE] Saved image to Cloudinary: ${result.secure_url}`);
+                return result.secure_url;
+            }
+        } catch (cloudErr) {
+            console.error('[CLOUD STORAGE ERROR] Falling back to local disk:', cloudErr.message);
+        }
+    }
+
+    // 2. Local File Storage Fallback
+    try {
+        const matches = base64Str.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (!matches || matches.length !== 3) return base64Str;
+        
+        const ext = matches[1].split('/')[1] || 'png';
+        const buffer = Buffer.from(matches[2], 'base64');
+        const filename = `${prefix}_${Date.now()}_${Math.floor(Math.random() * 10000)}.${ext}`;
+        const uploadsDir = path.join(__dirname, 'uploads');
+        
+        if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+        
+        fs.writeFileSync(path.join(uploadsDir, filename), buffer);
+        console.log(`[LOCAL STORAGE] Saved image locally: /uploads/${filename}`);
+        return `/uploads/${filename}`;
+    } catch (e) {
+        console.error('Error saving base64 image:', e);
+        return base64Str;
     }
 };
 
@@ -946,8 +1002,10 @@ app.post('/api/complaints', authenticateToken, async (req, res) => {
         else if (category === 'Electricity') slaHours = 48;
         else if (category === 'Roads & Traffic') slaHours = 168; // 7 days
 
+        const savedImage = await saveBase64Image(data.image, 'complaint');
         const newComplaint = new Complaint({
             ...data,
+            image: savedImage,
             category: category,
             priority: priority,
             confidence: aiResults.confidence || 0.85,
@@ -1020,8 +1078,8 @@ app.put('/api/complaints/:id/status', authenticateToken, async (req, res) => {
             complaint.status = status;
             if (reply) complaint.adminReply = reply;
             if (eta) complaint.eta = eta;
-            if (beforePhoto) complaint.beforePhoto = beforePhoto;
-            if (afterPhoto) complaint.afterPhoto = afterPhoto;
+            if (beforePhoto) complaint.beforePhoto = await saveBase64Image(beforePhoto, 'before');
+            if (afterPhoto) complaint.afterPhoto = await saveBase64Image(afterPhoto, 'after');
             if (reply && status === 'resolved') complaint.completionRemarks = reply;
 
             complaint.history.push({
