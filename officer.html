@@ -47,14 +47,14 @@
             </div>
 
             <!-- Stats Grid -->
-            <div class="stat-grid" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="stat-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 2rem;">
                 <div class="stat-card">
                     <div class="stat-icon blue" style="background: rgba(37, 99, 235, 0.15); color: #60a5fa;">
                         <i class="fa-solid fa-list"></i>
                     </div>
                     <div>
                         <h3 id="statAssigned">0</h3>
-                        <p style="color: var(--text-muted);">Assigned</p>
+                        <p style="color: var(--text-muted);">Assigned Tasks</p>
                     </div>
                 </div>
                 <div class="stat-card">
@@ -67,12 +67,30 @@
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon green" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
-                        <i class="fa-solid fa-check-circle"></i>
+                    <div class="stat-icon red" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
                     </div>
                     <div>
-                        <h3 id="statResolved">0</h3>
-                        <p style="color: var(--text-muted);">Resolved</p>
+                        <h3 id="statOverdue">0</h3>
+                        <p style="color: var(--text-muted);">Overdue (SLA)</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon cyan" style="background: rgba(6, 182, 212, 0.15); color: #22d3ee;">
+                        <i class="fa-solid fa-person-digging"></i>
+                    </div>
+                    <div>
+                        <h3 id="statToday">0</h3>
+                        <p style="color: var(--text-muted);">Today's Work</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple" style="background: rgba(168, 85, 247, 0.15); color: #c084fc;">
+                        <i class="fa-solid fa-kit-medical"></i>
+                    </div>
+                    <div>
+                        <h3 id="statEmergency">0</h3>
+                        <p style="color: var(--text-muted);">Emergency Cases</p>
                     </div>
                 </div>
             </div>
@@ -104,21 +122,23 @@
 
             <!-- Resolution Modal -->
             <div class="modal" id="resolveModal">
-                <div class="modal-content">
+                <div class="modal-content" style="max-width: 500px;">
                     <i class="fa-solid fa-times close-modal"
                         onclick="document.getElementById('resolveModal').classList.remove('active')"></i>
-                    <h2>Resolve Complaint</h2>
-                    <p>Complaint ID: <b id="resolveIdDisplay" style="color:var(--primary)"></b></p>
+                    <h2 style="color: var(--primary-accent); margin-bottom: 15px;"><i class="fa-solid fa-circle-check"></i> Resolve Complaint</h2>
+                    <p style="margin-bottom: 15px;">Complaint ID: <b id="resolveIdDisplay" style="color:var(--primary-accent)"></b></p>
 
-                    <label
-                        style="display:block; margin-top:15px; margin-bottom:5px; color:var(--text-muted);">Resolution
-                        Notes:</label>
-                    <textarea id="resolveNotes" rows="4" placeholder="Describe how the issue was fixed..."
-                        style="width: 100%; border: 1px solid #d1d5db; background: white; color: var(--text-main); padding: 10px; border-radius: 6px;"></textarea>
+                    <label style="display:block; margin-top:15px; margin-bottom:5px; color:var(--text-light); font-size: 0.9rem;">Before Photo (Site State before starting):</label>
+                    <input type="file" id="beforePhotoInput" accept="image/*" style="width: 100%; padding: 8px; background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff; margin-bottom: 15px;">
+
+                    <label style="display:block; margin-top:10px; margin-bottom:5px; color:var(--text-light); font-size: 0.9rem;">After Photo (Resolved Work Proof):</label>
+                    <input type="file" id="afterPhotoInput" accept="image/*" style="width: 100%; padding: 8px; background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff; margin-bottom: 15px;">
+
+                    <label style="display:block; margin-top:10px; margin-bottom:5px; color:var(--text-light); font-size: 0.9rem;">Completion Remarks:</label>
+                    <textarea id="resolveNotes" rows="3" placeholder="Describe the resolution steps and comments..." style="width: 100%; background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff; padding: 10px; font-family: inherit; font-size: 0.9rem;"></textarea>
 
                     <input type="hidden" id="resolveId">
-                    <button onclick="submitResolution()" class="btn btn-primary"
-                        style="margin-top: 15px; width: 100%;">Mark as Resolved</button>
+                    <button onclick="submitResolution()" class="btn btn-primary" style="margin-top: 20px; width: 100%; padding: 10px; font-size: 0.95rem; font-weight: 600;"><i class="fa-solid fa-check-double"></i> Mark as Resolved</button>
                 </div>
             </div>
 
@@ -172,9 +192,14 @@
                                 <td>
                                     <div style="display:flex; gap:5px;">
                                         <button onclick="openViewModal('${c.id}')" class="btn btn-secondary" style="padding: 4px 6px; font-size: 0.75rem;" title="View"><i class="fa-solid fa-eye"></i></button>
-                                        ${c.status !== 'resolved' ?
-                                `<button onclick="openResolveModal('${c.id}')" class="btn btn-primary" style="padding: 4px 6px; font-size: 0.75rem;" title="Mark Resolved"><i class="fa-solid fa-check"></i> Resolve</button>`
-                                : '<span style="color:#16a34a; font-size:0.8rem;"><i class="fa-solid fa-check"></i> Done</span>'}
+                                        ${c.status !== 'resolved' && c.status !== 'completed' && c.status !== 'feedback_submitted' ?
+                                            ((c.status === 'assigned' || c.status === 'open' || c.status === 'pending') ? 
+                                                `<button onclick="updateTaskStatus('${c.id}', 'accepted')" class="btn btn-primary" style="padding: 4px 6px; font-size: 0.75rem; background: #6366f1;"><i class="fa-solid fa-check"></i> Accept Task</button>` :
+                                             c.status === 'accepted' ?
+                                                `<button onclick="updateTaskStatus('${c.id}', 'work_started')" class="btn btn-primary" style="padding: 4px 6px; font-size: 0.75rem; background: #fbbf24; color: #000;"><i class="fa-solid fa-wrench"></i> Start Work</button>` :
+                                                `<button onclick="openResolveModal('${c.id}')" class="btn btn-primary" style="padding: 4px 6px; font-size: 0.75rem; background: #10b981;"><i class="fa-solid fa-circle-check"></i> Resolve</button>`
+                                            )
+                                        : '<span style="color:#10b981; font-size:0.8rem;"><i class="fa-solid fa-check"></i> Resolved</span>'}
                                     </div>
                                 </td>
                             </tr>
@@ -185,8 +210,10 @@
 
                 // Stats
                 document.getElementById('statAssigned').innerText = myTasks.length;
-                document.getElementById('statPending').innerText = myTasks.filter(c => c.status !== 'resolved').length;
-                document.getElementById('statResolved').innerText = myTasks.filter(c => c.status === 'resolved').length;
+                document.getElementById('statPending').innerText = myTasks.filter(c => c.status !== 'resolved' && c.status !== 'completed' && c.status !== 'feedback_submitted').length;
+                document.getElementById('statOverdue').innerText = myTasks.filter(c => c.isSlaBreached && c.status !== 'resolved' && c.status !== 'completed' && c.status !== 'feedback_submitted').length;
+                document.getElementById('statToday').innerText = myTasks.filter(c => c.status === 'work_started').length;
+                document.getElementById('statEmergency').innerText = myTasks.filter(c => c.priority === 'Emergency' && c.status !== 'resolved' && c.status !== 'completed' && c.status !== 'feedback_submitted').length;
             };
 
             render();
@@ -196,31 +223,81 @@
                 document.getElementById('resolveId').value = id;
                 document.getElementById('resolveIdDisplay').innerText = id;
                 document.getElementById('resolveNotes').value = '';
+                document.getElementById('beforePhotoInput').value = '';
+                document.getElementById('afterPhotoInput').value = '';
                 document.getElementById('resolveModal').classList.add('active');
             };
 
             window.submitResolution = async () => {
                 const id = document.getElementById('resolveId').value;
                 const notes = document.getElementById('resolveNotes').value;
+                
+                const beforeFile = document.getElementById('beforePhotoInput').files[0];
+                const afterFile = document.getElementById('afterPhotoInput').files[0];
+
+                let beforePhoto = null;
+                if (beforeFile) {
+                    const reader = new FileReader();
+                    beforePhoto = await new Promise((resolve) => {
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.readAsDataURL(beforeFile);
+                    });
+                }
+
+                let afterPhoto = null;
+                if (afterFile) {
+                    const reader = new FileReader();
+                    afterPhoto = await new Promise((resolve) => {
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.readAsDataURL(afterFile);
+                    });
+                }
 
                 if (confirm("Mark this complaint as resolved?")) {
-                    await App.complaints.updateStatus(id, 'resolved', notes);
-                    alert("Complaint resolved!");
-                    document.getElementById('resolveModal').classList.remove('active');
-                    render();
+                    const success = await App.complaints.updateStatus(id, 'resolved', notes, beforePhoto, afterPhoto);
+                    if (success) {
+                        alert("Complaint resolved successfully!");
+                        document.getElementById('resolveModal').classList.remove('active');
+                        window.location.reload();
+                    } else {
+                        alert("Failed to resolve complaint.");
+                    }
+                }
+            };
+
+            window.updateTaskStatus = async (id, status) => {
+                if (confirm(`Change status to ${status.toUpperCase()}?`)) {
+                    await App.complaints.updateStatus(id, status);
+                    alert(`Status updated to ${status.toUpperCase()}`);
+                    window.location.reload();
                 }
             };
 
             window.openViewModal = (id) => {
                 const c = App.complaints.getAll().find(x => x.id === id);
                 const content = document.getElementById('viewContent');
+                
+                let photosHtml = '';
+                if (c.image) {
+                    photosHtml += `<div><b style="color:var(--text-light); font-size:0.85rem;">Original Photo:</b><br><img src="${c.image}" style="max-width:100%; max-height:180px; margin-top:5px; border-radius:5px;"></div>`;
+                }
+                if (c.beforePhoto) {
+                    photosHtml += `<div><b style="color:var(--text-light); font-size:0.85rem;">Before Photo (Officer):</b><br><img src="${c.beforePhoto}" style="max-width:100%; max-height:180px; margin-top:5px; border-radius:5px;"></div>`;
+                }
+                if (c.afterPhoto) {
+                    photosHtml += `<div><b style="color:var(--text-light); font-size:0.85rem;">After Photo (Resolved Proof):</b><br><img src="${c.afterPhoto}" style="max-width:100%; max-height:180px; margin-top:5px; border-radius:5px;"></div>`;
+                }
+
                 content.innerHTML = `
                     <p><b style="color:var(--text-main)">ID:</b> ${c.id}</p>
                     <p><b style="color:var(--text-main)">Subject:</b> ${c.subject}</p>
                     <p><b style="color:var(--text-main)">Category:</b> ${c.category}</p>
                     <p><b style="color:var(--text-main)">Description:</b> ${c.description}</p>
                     <p><b style="color:var(--text-main)">Location:</b> ${c.location}</p>
-                    ${c.image ? `<img src="${c.image}" style="max-width:100%; margin-top:10px; border-radius:5px;">` : ''}
+                    ${c.linkedAsset ? `<p><b style="color:var(--text-main)">Linked Asset:</b> ${c.linkedAsset}</p>` : ''}
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:10px; margin-top:15px;">
+                        ${photosHtml}
+                    </div>
                 `;
                 document.getElementById('viewModal').classList.add('active');
             }

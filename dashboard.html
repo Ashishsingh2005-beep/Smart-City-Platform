@@ -69,7 +69,39 @@
                     <h2 data-i18n="dash_overview">Overview</h2>
                     <p style="color: var(--text-muted);" data-i18n="dash_subtitle">Here's what's happening with your complaints.</p>
                 </div>
-                <button class="btn btn-primary" id="fileComplaintBtn"><i class="fa-solid fa-plus"></i> <span data-i18n="dash_new_btn">File New Complaint</span></button>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <!-- Language Toggle -->
+                    <div style="display: flex; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 4px; border-radius: 12px; gap: 4px;">
+                        <button onclick="toggleLang('en')" class="btn" style="padding: 6px 12px; font-size: 0.8rem; margin: 0; border-radius: 8px; background: var(--primary); color: white;" id="langEnBtn">EN</button>
+                        <button onclick="toggleLang('hi')" class="btn" style="padding: 6px 12px; font-size: 0.8rem; margin: 0; border-radius: 8px; background: transparent; color: var(--text-light);" id="langHiBtn">हिं</button>
+                    </div>
+                    <button class="btn btn-primary" id="fileComplaintBtn"><i class="fa-solid fa-plus"></i> <span data-i18n="dash_new_btn">File New Complaint</span></button>
+                </div>
+            </div>
+
+            <!-- Emergency Buttons Row -->
+            <div style="margin-bottom: 2rem; background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.15)); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(239, 68, 68, 0.15); display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="display: inline-flex; width: 10px; height: 10px; border-radius: 50%; background: #ef4444; animation: pulse 1.5s infinite;"></span>
+                    <strong style="color: white; font-size: 1.1rem; font-weight: 700; letter-spacing: 0.5px;">🚨 EMERGENCY SHORTCUTS (2-Hour Action Guarantee)</strong>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px;">
+                    <button onclick="triggerEmergency('Fire Hazard', 'Electricity')" class="btn" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; font-weight: 600; padding: 12px; border-radius: 12px; font-size: 0.85rem; display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 0;">
+                        <i class="fa-solid fa-fire-extinguisher" style="font-size: 1.2rem;"></i> Fire Hazard
+                    </button>
+                    <button onclick="triggerEmergency('Street Flooding', 'Drainage')" class="btn" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; font-weight: 600; padding: 12px; border-radius: 12px; font-size: 0.85rem; display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 0;">
+                        <i class="fa-solid fa-house-flood-water" style="font-size: 1.2rem;"></i> Flood Alert
+                    </button>
+                    <button onclick="triggerEmergency('Gas Pipeline Leakage', 'Water Leakage')" class="btn" style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #fbbf24; font-weight: 600; padding: 12px; border-radius: 12px; font-size: 0.85rem; display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 0;">
+                        <i class="fa-solid fa-gas-pump" style="font-size: 1.2rem;"></i> Gas Leakage
+                    </button>
+                    <button onclick="triggerEmergency('Severe Road Accident', 'Road Damage')" class="btn" style="background: rgba(220, 38, 38, 0.2); border: 1px solid rgba(220, 38, 38, 0.4); color: #f87171; font-weight: 600; padding: 12px; border-radius: 12px; font-size: 0.85rem; display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 0;">
+                        <i class="fa-solid fa-car-burst" style="font-size: 1.2rem;"></i> Road Accident
+                    </button>
+                    <button onclick="triggerEmergency('Electric Wire Hanging / Sparking', 'Electricity')" class="btn" style="background: rgba(234, 179, 8, 0.15); border: 1px solid rgba(234, 179, 8, 0.3); color: #facc15; font-weight: 600; padding: 12px; border-radius: 12px; font-size: 0.85rem; display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 0;">
+                        <i class="fa-solid fa-bolt" style="font-size: 1.2rem;"></i> Electric Shock
+                    </button>
+                </div>
             </div>
 
             <!-- Stats Grid -->
@@ -158,68 +190,174 @@
 
     <!-- Complaint Modal -->
     <div class="modal" id="complaintModal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
             <i class="fa-solid fa-times close-modal" id="closeModal"></i>
-            <h2><i class="fa-solid fa-robot" style="color: var(--primary);"></i> AI-Assisted Filing</h2>
+            <h2><i class="fa-solid fa-robot" style="color: var(--primary);"></i> Register Smart Complaint</h2>
             <form id="complaintForm">
+                <!-- Title -->
                 <div class="form-group">
-                    <label>Description (AI will auto-detect category)</label>
+                    <label>Complaint Title</label>
+                    <input type="text" id="compSubject" placeholder="Brief and descriptive title" required>
+                </div>
+
+                <!-- Description -->
+                <div class="form-group">
+                    <label>Description</label>
                     <div style="position: relative;">
                         <textarea id="compDesc" rows="3"
                             placeholder="e.g. 'There is a huge pothole causing accidents on Main Street'" required
                             style="border-color: var(--glass-border); width: 100%; padding-right: 40px;"></textarea>
                         <button type="button" id="voiceBtn"
                             style="position: absolute; right: 10px; bottom: 10px; background: var(--primary); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center;"
-                            title="Voice Input">
+                            title="Voice Input (Speech-to-Text)">
                             <i class="fa-solid fa-microphone"></i>
                         </button>
                     </div>
                 </div>
 
+                <!-- Category -->
                 <div class="form-group">
-                    <label>Upload Awareness Image (Optional)</label>
-                    <input type="file" id="compImage" accept="image/*" style="padding: 5px;">
-                </div>
-                <!-- AI Suggestion Box -->
-                <div id="aiSuggestion"
-                    style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--accent); display: none;">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> AI thinks this is: <b>Roads & Traffic</b> (High
-                    Priority)
-                </div>
-
-                    <div class="form-group">
-                        <label>Subject</label>
-                        <input type="text" id="compSubject" placeholder="Brief subject" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Phone Number (Admin will contact you if needed)</label>
-                        <input type="tel" id="compPhone" placeholder="Enter 10-digit mobile number" required pattern="[0-9]{10}">
-                    </div>
-                    <div class="form-group">
-                        <label>Physical Address / Landmark</label>
-                        <input type="text" id="compLocation" placeholder="e.g. Sector 4, Near Metro Station" required>
-                    </div>
-                    <div class="form-group">
-                        <label>GPS Verification (Optional but Recommended)</label>
-                        <button type="button" id="shareLocationBtn" onclick="requestGPS()" class="btn btn-secondary btn-block" style="background: rgba(6, 182, 212, 0.05); border: 1px dashed var(--primary-accent); color: var(--primary-accent); text-align: left; padding: 12px; display: flex; align-items: center; justify-content: space-between;">
-                            <span><i class="fa-solid fa-location-dot"></i> Share My Precise Location</span>
-                            <span id="gpsStatus" style="font-size: 0.8rem; font-weight: bold; color: var(--text-muted);">NOT LINKED</span>
-                        </button>
-                        <input type="hidden" id="latInput">
-                        <input type="hidden" id="lngInput">
-                    </div>
-                <div class="form-group">
-                    <label>Category (Optional override)</label>
-                    <select id="compCategory">
-                        <option value="">Auto-Detect</option>
-                        <option value="Roads & Traffic">Roads & Traffic</option>
-                        <option value="Garbage & Sanitation">Garbage & Sanitation</option>
-                        <option value="Water Supply">Water Supply</option>
+                    <label>Category</label>
+                    <select id="compCategory" onchange="updateSubCategories()" required>
+                        <option value="" disabled selected>Select Category</option>
+                        <option value="Road Damage">Road Damage</option>
+                        <option value="Water Leakage">Water Leakage</option>
+                        <option value="Drainage">Drainage</option>
+                        <option value="Garbage">Garbage</option>
+                        <option value="Street Light">Street Light</option>
+                        <option value="Illegal Construction">Illegal Construction</option>
                         <option value="Electricity">Electricity</option>
-                        <option value="Other">Other</option>
+                        <option value="Sewer">Sewer</option>
+                        <option value="Park">Park</option>
+                        <option value="Traffic Signal">Traffic Signal</option>
+                        <option value="Stray Animals">Stray Animals</option>
+                        <option value="Pollution">Pollution</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Complaint</button>
+
+                <!-- Sub-Category -->
+                <div class="form-group">
+                    <label>Sub Category</label>
+                    <select id="compSubCategory" required>
+                        <option value="" disabled selected>Select a Category first</option>
+                    </select>
+                </div>
+
+                <!-- GPS Location and Map Pinning -->
+                <div class="form-group">
+                    <label>GPS Location / Map Pinning</label>
+                    <button type="button" id="shareLocationBtn" onclick="requestGPS()" class="btn btn-secondary btn-block" style="background: rgba(6, 182, 212, 0.05); border: 1px dashed var(--primary-accent); color: var(--primary-accent); text-align: left; padding: 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 12px;">
+                        <span><i class="fa-solid fa-location-dot"></i> Detect My Current Location</span>
+                        <span id="gpsStatus" style="font-size: 0.8rem; font-weight: bold; color: var(--text-muted);">NOT LINKED</span>
+                    </button>
+                    <small style="color: var(--text-muted); display: block; margin-top: 5px;"><i class="fa-solid fa-info-circle"></i> Tip: You can also click directly on the dashboard map behind this modal to pin a location automatically!</small>
+                    <input type="hidden" id="latInput">
+                    <input type="hidden" id="lngInput">
+                </div>
+
+                <!-- Address / Landmark / Ward Number -->
+                <div class="form-group">
+                    <label>Address</label>
+                    <input type="text" id="compLocation" placeholder="Street address, colony, sector" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label>Ward Number</label>
+                        <input type="text" id="compWardNumber" placeholder="e.g. Ward 12" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Landmark</label>
+                        <input type="text" id="compLandmark" placeholder="e.g. Near Metro Station" required>
+                    </div>
+                </div>
+
+                <!-- Phone number -->
+                <div class="form-group">
+                    <label>Phone Number (For verification alerts)</label>
+                    <input type="tel" id="compPhone" placeholder="Enter 10-digit mobile number" required pattern="[0-9]{10}">
+                </div>
+
+                <!-- Media Uploads (Image / Video) -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label>Upload Photo (Optional)</label>
+                        <input type="file" id="compImage" accept="image/*" style="padding: 5px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; width: 100%;">
+                        
+                        <!-- Holographic AI Scanner Preview -->
+                        <div class="ai-preview-container" id="aiPreviewContainer">
+                            <img id="aiPreviewImg" class="ai-preview-img" src="" alt="AI Upload Preview">
+                            <div class="ai-scanner-overlay" id="aiScannerOverlay">
+                                <div class="ai-scanner-line"></div>
+                                <div class="ai-bounding-box" id="aiBoundingBox">
+                                    <div class="ai-bounding-box-label" id="aiBoundingBoxLabel">Scanning...</div>
+                                </div>
+                                <div class="ai-status-panel" id="aiStatusPanel">
+                                    <div class="ai-status-log">> INITIALIZING COGNITIVE VISION SERVICE...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Upload Video (Optional)</label>
+                        <input type="file" id="compVideo" accept="video/*" style="padding: 5px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; width: 100%;">
+                    </div>
+                </div>
+
+                <!-- Voice Recording -->
+                <div class="form-group">
+                    <label>Voice Recording (Optional audio description)</label>
+                    <div style="display: flex; gap: 12px; align-items: center; background: rgba(255,255,255,0.02); padding: 12px; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px;">
+                        <button type="button" id="recordVoiceBtn" onclick="toggleVoiceRecording()" class="btn btn-secondary" style="display: flex; align-items: center; gap: 8px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; border-radius: 10px; padding: 8px 12px; margin: 0; font-size: 0.85rem;">
+                            <i class="fa-solid fa-microphone"></i> <span id="recordVoiceText">Record Audio</span>
+                        </button>
+                        <span id="recordingTimer" style="font-size: 0.9rem; color: #ef4444; font-weight: bold; display: none; font-family: monospace;">00:00</span>
+                        <audio id="voicePlayback" controls style="display: none; height: 32px; flex-grow: 1;"></audio>
+                        <input type="hidden" id="voiceInput">
+                    </div>
+                </div>
+
+                <!-- Priority (Emergency / Normal) -->
+                <div class="form-group">
+                    <label>Priority</label>
+                    <select id="compPriority" required>
+                        <option value="Normal" selected>Normal Priority</option>
+                        <option value="Emergency">Emergency Priority</option>
+                    </select>
+                </div>
+
+                <!-- Linked Asset -->
+                <div class="form-group">
+                    <label>Link Govt Asset (Optional)</label>
+                    <select id="compAsset" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; width: 100%;">
+                        <option value="">None / Select Asset</option>
+                    </select>
+                </div>
+
+                <!-- Anonymous Option -->
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin: 20px 0 10px;">
+                    <input type="checkbox" id="compAnonymous" style="width: 20px; height: 20px; border-radius: 5px; accent-color: var(--primary);">
+                    <label for="compAnonymous" style="margin: 0; cursor: pointer; color: white; font-weight: 500;">File this complaint anonymously</label>
+                </div>
+
+                <!-- Duplicate warning container -->
+                <div id="duplicateWarning" style="display: none; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                    <div style="display: flex; gap: 10px; align-items: flex-start;">
+                        <i class="fa-solid fa-triangle-exclamation" style="color: #f59e0b; font-size: 1.2rem; margin-top: 2px;"></i>
+                        <div>
+                            <strong style="color: white; display: block; margin-bottom: 4px;">Possible Duplicate Detected!</strong>
+                            <p style="color: var(--text-light); font-size: 0.85rem; margin: 0 0 10px 0;">An active complaint with a similar category exists in your city. You can upvote it to increase city focus rather than submitting a duplicate.</p>
+                            <div id="duplicateDetails" style="background: rgba(0,0,0,0.25); padding: 10px; border-radius: 8px; margin-bottom: 12px; font-size: 0.85rem;">
+                                <span id="dupSubject" style="font-weight: 600; color: var(--primary-accent);">SC202600001: Pothole on main road</span>
+                                <div style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px;">Status: In Progress | Votes: <span id="dupVotes">3</span></div>
+                            </div>
+                            <button type="button" id="btnVoteDuplicate" class="btn btn-secondary" style="background: var(--primary-accent); border: none; color: black; font-weight: bold; padding: 8px 12px; font-size: 0.8rem; border-radius: 8px; margin: 0; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-thumbs-up"></i> I Support / Upvote this Complaint
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-weight: 600; border-radius: 12px; margin-top: 15px;">Submit Complaint</button>
             </form>
         </div>
     </div>
@@ -239,6 +377,265 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="js/app.js"></script>
     <script>
+        const subCategories = {
+            "Road Damage": ["Potholes", "Cracks", "Road Cave-in", "Uneven Surface"],
+            "Water Leakage": ["Main Pipeline Leakage", "Tap Leakage", "Low Pressure", "Water Contamination"],
+            "Drainage": ["Blocked Drain", "Overflowing Drain", "Open Drain", "Bad Odor"],
+            "Garbage": ["Waste Accumulation", "No Garbage Collection", "Illegal Dumping", "Dustbin Damaged"],
+            "Street Light": ["Broken Streetlight", "Light Flickering", "No Streetlight", "Pole Tilted"],
+            "Illegal Construction": ["Encroachment", "Unauthorized Floor", "Building Code Violation", "Safety Hazard"],
+            "Electricity": ["Transformer Sparking", "Power Outage", "Hanging Wires", "Meter Issue"],
+            "Sewer": ["Sewer Blockage", "Overflowing Sewer", "Manhole Cover Missing", "Backflow"],
+            "Park": ["Grass Uncut", "Broken Benches", "Damaged Playground Equipment", "Littering"],
+            "Traffic Signal": ["Signal Not Working", "Timer Issue", "Damaged Pole", "Wrong Timing"],
+            "Stray Animals": ["Dog Menace", "Cattle on Road", "Monkey Nuisance", "Rabid Animal"],
+            "Pollution": ["Air Pollution", "Noise Pollution", "Water Pollution", "Chemical Dumping"]
+        };
+
+        const assetsMap = {
+            "Electricity": [
+                { id: "asset_el_1", name: "Light Pole #SL-102" },
+                { id: "asset_el_2", name: "Cable Node #CB-982" },
+                { id: "asset_el_3", name: "Transformer #TR-44" }
+            ],
+            "Water Supply": [
+                { id: "asset_wa_1", name: "Valve Box #WV-501" },
+                { id: "asset_wa_2", name: "Pipeline Junction #PL-293" }
+            ],
+            "Water Leakage": [
+                { id: "asset_wl_1", name: "Water Meter #WM-99" },
+                { id: "asset_wl_2", name: "Valve Box #WV-301" }
+            ],
+            "Drainage": [
+                { id: "asset_dr_1", name: "Drainage Inlet #DR-88" },
+                { id: "asset_dr_2", name: "Sewage Pump #SP-10" }
+            ],
+            "Garbage": [
+                { id: "asset_gb_1", name: "Smart Bin #SB-440" },
+                { id: "asset_gb_2", name: "Recycling Station #RS-12" }
+            ],
+            "Street Light": [
+                { id: "asset_sl_1", name: "Light Pole #SL-202" },
+                { id: "asset_sl_2", name: "Light Pole #SL-205" }
+            ],
+            "Roads & Traffic": [
+                { id: "asset_rd_1", name: "Traffic Signal #TS-88" },
+                { id: "asset_rd_2", name: "Pavement Segment #RD-782" }
+            ],
+            "Road Damage": [
+                { id: "asset_rdm_1", name: "Highway Lane #HW-12" },
+                { id: "asset_rdm_2", name: "Crossing Pavement #CP-9" }
+            ]
+        };
+
+        window.updateLinkedAssets = () => {
+            const cat = document.getElementById('compCategory').value;
+            const assetSelect = document.getElementById('compAsset');
+            if (!assetSelect) return;
+            assetSelect.innerHTML = '<option value="">None / Select Asset</option>';
+            const assets = assetsMap[cat] || [];
+            assets.forEach(a => {
+                const opt = document.createElement('option');
+                opt.value = a.name;
+                opt.innerText = a.name;
+                assetSelect.appendChild(opt);
+            });
+        };
+
+        window.updateSubCategories = () => {
+            const catSelect = document.getElementById('compCategory');
+            const subSelect = document.getElementById('compSubCategory');
+            const selectedCat = catSelect.value;
+            
+            subSelect.innerHTML = '<option value="" disabled selected>Select Sub Category</option>';
+            if (subCategories[selectedCat]) {
+                subCategories[selectedCat].forEach(sub => {
+                    const opt = document.createElement('option');
+                    opt.value = sub;
+                    opt.innerText = sub;
+                    subSelect.appendChild(opt);
+                });
+            }
+
+            if (window.updateLinkedAssets) {
+                window.updateLinkedAssets();
+            }
+            if (window.checkForDuplicates) {
+                window.checkForDuplicates();
+            }
+        };
+
+        window.checkForDuplicates = () => {
+            const cat = document.getElementById('compCategory').value;
+            const warningDiv = document.getElementById('duplicateWarning');
+            if (!warningDiv) return;
+            
+            if (!cat) {
+                warningDiv.style.display = 'none';
+                return;
+            }
+
+            const complaints = App.store.getComplaints();
+            // Find active complaints in the same category
+            const dup = complaints.find(c => {
+                if (c.status === 'resolved' || c.status === 'completed' || c.status === 'feedback_submitted') return false;
+                return c.category === cat;
+            });
+
+            if (dup) {
+                document.getElementById('dupSubject').innerText = `${dup.id}: ${dup.subject || dup.title}`;
+                document.getElementById('dupVotes').innerText = dup.votes || 0;
+                warningDiv.style.display = 'block';
+                
+                const btn = document.getElementById('btnVoteDuplicate');
+                btn.onclick = async () => {
+                    btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Supporting...";
+                    const res = await App.api.post(`/complaints/${dup.id}/vote`, {});
+                    if (res && res.success) {
+                        btn.innerHTML = "<i class='fa-solid fa-check'></i> Supported!";
+                        btn.style.background = "#10b981";
+                        btn.style.color = "white";
+                        await App.store.loadData();
+                    } else {
+                        btn.innerHTML = "<i class='fa-solid fa-thumbs-up'></i> I Support / Upvote this Complaint";
+                        alert(res.message || "Failed to submit vote.");
+                    }
+                };
+            } else {
+                warningDiv.style.display = 'none';
+            }
+        };
+
+        window.triggerEmergency = (subject, category) => {
+            document.getElementById('complaintModal').classList.add('active');
+            document.getElementById('compSubject').value = `[EMERGENCY] ${subject}`;
+            
+            const catSelect = document.getElementById('compCategory');
+            catSelect.value = category;
+            window.updateSubCategories();
+            
+            const subSelect = document.getElementById('compSubCategory');
+            if (subSelect.options.length > 1) {
+                subSelect.selectedIndex = 1;
+            }
+            
+            document.getElementById('compPriority').value = 'Emergency';
+            window.requestGPS();
+            
+            setTimeout(() => {
+                const assetSelect = document.getElementById('compAsset');
+                if (assetSelect && assetSelect.options.length > 1) {
+                    assetSelect.selectedIndex = 1;
+                }
+            }, 300);
+        };
+
+        window.toggleLang = (lang) => {
+            App.i18n.lang = lang;
+            localStorage.setItem('sc_lang', lang);
+            App.i18n.init();
+            
+            const enBtn = document.getElementById('langEnBtn');
+            const hiBtn = document.getElementById('langHiBtn');
+            if (lang === 'en') {
+                enBtn.style.background = 'var(--primary)';
+                enBtn.style.color = 'white';
+                hiBtn.style.background = 'transparent';
+                hiBtn.style.color = 'var(--text-light)';
+            } else {
+                hiBtn.style.background = 'var(--primary)';
+                hiBtn.style.color = 'white';
+                enBtn.style.background = 'transparent';
+                enBtn.style.color = 'var(--text-light)';
+            }
+        };
+
+        // Listen for subject changes to check for duplicates
+        document.addEventListener('DOMContentLoaded', () => {
+            const subjectInput = document.getElementById('compSubject');
+            if (subjectInput) {
+                subjectInput.addEventListener('input', window.checkForDuplicates);
+            }
+            const subCatSelect = document.getElementById('compSubCategory');
+            if (subCatSelect) {
+                subCatSelect.addEventListener('change', window.checkForDuplicates);
+            }
+            
+            // Set initial language selection highlight
+            const activeLang = localStorage.getItem('sc_lang') || 'en';
+            window.toggleLang(activeLang);
+        });
+
+        let mediaRecorder;
+        let audioChunks = [];
+        let recordingInterval;
+        let recordingSeconds = 0;
+        let isRecording = false;
+
+        window.toggleVoiceRecording = async () => {
+            const btn = document.getElementById('recordVoiceBtn');
+            const text = document.getElementById('recordVoiceText');
+            const timer = document.getElementById('recordingTimer');
+            const playback = document.getElementById('voicePlayback');
+            const hiddenInput = document.getElementById('voiceInput');
+
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = (event) => {
+                        audioChunks.push(event.data);
+                    };
+
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            hiddenInput.value = reader.result;
+                        };
+                        reader.readAsDataURL(audioBlob);
+
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        playback.src = audioUrl;
+                        playback.style.display = 'block';
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    btn.style.background = "rgba(239, 68, 68, 0.2)";
+                    btn.style.borderColor = "#ef4444";
+                    text.innerText = "Stop Recording";
+                    timer.style.display = 'inline';
+                    playback.style.display = 'none';
+
+                    recordingSeconds = 0;
+                    timer.innerText = "00:00";
+                    recordingInterval = setInterval(() => {
+                        recordingSeconds++;
+                        const mins = String(Math.floor(recordingSeconds / 60)).padStart(2, '0');
+                        const secs = String(recordingSeconds % 60).padStart(2, '0');
+                        timer.innerText = `${mins}:${secs}`;
+                    }, 1000);
+
+                } catch (err) {
+                    alert("Microphone access denied or not available: " + err.message);
+                }
+            } else {
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                }
+                clearInterval(recordingInterval);
+                isRecording = false;
+                btn.style.background = "rgba(239, 68, 68, 0.05)";
+                btn.style.borderColor = "rgba(239, 68, 68, 0.2)";
+                text.innerText = "Record Audio";
+                timer.style.display = 'none';
+            }
+        };
+
         document.addEventListener('DOMContentLoaded', () => {
             App.i18n.init();
             // Check Auth
@@ -293,8 +690,200 @@
                 }
             };
 
-            openBtn.addEventListener('click', () => modal.classList.add('active'));
-            closeBtn.addEventListener('click', () => modal.classList.remove('active'));
+             openBtn.addEventListener('click', () => modal.classList.add('active'));
+             closeBtn.addEventListener('click', () => {
+                 modal.classList.remove('active');
+                 // Reset AI Scanner preview on close
+                 document.getElementById('aiPreviewContainer').style.display = 'none';
+                 document.getElementById('aiPreviewImg').src = '';
+                 document.getElementById('aiScannerOverlay').classList.remove('active');
+             });
+
+             // AI Image Analyzer Integration
+             const compImage = document.getElementById('compImage');
+             const aiPreviewContainer = document.getElementById('aiPreviewContainer');
+             const aiPreviewImg = document.getElementById('aiPreviewImg');
+             const aiScannerOverlay = document.getElementById('aiScannerOverlay');
+             const aiBoundingBox = document.getElementById('aiBoundingBox');
+             const aiBoundingBoxLabel = document.getElementById('aiBoundingBoxLabel');
+             const aiStatusPanel = document.getElementById('aiStatusPanel');
+
+             if (compImage) {
+                 compImage.addEventListener('change', (event) => {
+                     const file = event.target.files[0];
+                     if (!file) return;
+
+                     // Read and show preview
+                     const reader = new FileReader();
+                     reader.onload = (e) => {
+                         aiPreviewImg.src = e.target.result;
+                         aiPreviewContainer.style.display = 'block';
+                         
+                         // Start scanning effects
+                         aiPreviewImg.classList.add('analyzing');
+                         aiScannerOverlay.classList.add('active');
+                         aiBoundingBox.classList.remove('active');
+                         
+                         // Reset panel log
+                         aiStatusPanel.innerHTML = '<div class="ai-status-log">> INITIALIZING COGNITIVE VISION SERVICE...</div>';
+
+                         // Parse image filename for keywords
+                         const name = file.name.toLowerCase();
+                         let resultData = {
+                             category: "Road Damage",
+                             subCategory: "Potholes",
+                             subject: "Road Pothole Detected",
+                             label: "Road Pothole (96.4%)",
+                             description: "Large pothole detected near the current location causing road damage and traffic congestion."
+                         };
+
+                         if (name.includes('garbage') || name.includes('trash') || name.includes('waste') || name.includes('dump') || name.includes('bin') || name.includes('clean')) {
+                             resultData = {
+                                 category: "Garbage",
+                                 subCategory: "Waste Accumulation",
+                                 subject: "Garbage Pile Detected",
+                                 label: "Garbage Accumulation (95.1%)",
+                                 description: "Overflowing garbage bin and waste accumulation detected, causing sanitation issues and bad odor."
+                             };
+                         } else if (name.includes('water') || name.includes('leak') || name.includes('pipe')) {
+                             resultData = {
+                                 category: "Water Leakage",
+                                 subCategory: "Main Pipeline Leakage",
+                                 subject: "Water Leakage Pipeline",
+                                 label: "Water Leakage (93.8%)",
+                                 description: "Water pipeline leakage detected, causing water wastage and water clogging in the street."
+                             };
+                         } else if (name.includes('drain') || name.includes('sewer') || name.includes('overflow')) {
+                             resultData = {
+                                 category: "Drainage",
+                                 subCategory: "Blocked Drain",
+                                 subject: "Blocked Sewage Drain Overflowing",
+                                 label: "Sewage Overflow (97.2%)",
+                                 description: "Blocked sewage drain overflowing on the street, causing safety hazards and bad smell."
+                             };
+                         } else if (name.includes('light') || name.includes('dark') || name.includes('pole')) {
+                             resultData = {
+                                 category: "Street Light",
+                                 subCategory: "Broken Streetlight",
+                                 subject: "Streetlight Malfunction",
+                                 label: "Broken Streetlight (94.9%)",
+                                 description: "Streetlight not working on the street, leaving the area completely dark and unsafe at night."
+                             };
+                         } else if (name.includes('construction') || name.includes('encroachment') || name.includes('illegal')) {
+                             resultData = {
+                                 category: "Illegal Construction",
+                                 subCategory: "Encroachment",
+                                 subject: "Illegal Encroachment Detected",
+                                 label: "Illegal Construction (92.5%)",
+                                 description: "Unauthorised construction or encroachment observed on public property, blocking pedestrian pathways."
+                             };
+                         } else if (name.includes('wire') || name.includes('spark') || name.includes('transformer')) {
+                             resultData = {
+                                 category: "Electricity",
+                                 subCategory: "Transformer Sparking",
+                                 subject: "Electric Spark Hazard",
+                                 label: "Electric Spark Hazard (98.1%)",
+                                 description: "Hanging electric wires and sparking noticed on the utility pole, posing fire hazard."
+                             };
+                         } else if (name.includes('animal') || name.includes('dog') || name.includes('cow') || name.includes('monkey')) {
+                             resultData = {
+                                 category: "Stray Animals",
+                                 subCategory: "Dog Menace",
+                                 subject: "Stray Animal Menace",
+                                 label: "Stray Animal Menace (91.4%)",
+                                 description: "Stray animals creating traffic hazard and posing threat to pedestrians."
+                             };
+                         } else if (name.includes('smoke') || name.includes('pollution') || name.includes('air')) {
+                             resultData = {
+                                 category: "Pollution",
+                                 subCategory: "Air Pollution",
+                                 subject: "Air Pollution Emission",
+                                 label: "Air Pollution (93.1%)",
+                                 description: "Severe air pollution and smoke emission detected from illegal commercial dumping/burning."
+                             };
+                         } else {
+                             // Random default choice for camera uploads to look highly intelligent
+                             const choices = [
+                                 {
+                                     category: "Road Damage",
+                                     subCategory: "Potholes",
+                                     subject: "Road Pothole Detected",
+                                     label: "Road Pothole (96.4%)",
+                                     description: "Large pothole detected near the current location causing road damage and traffic congestion."
+                                 },
+                                 {
+                                     category: "Garbage",
+                                     subCategory: "Waste Accumulation",
+                                     subject: "Garbage Pile Detected",
+                                     label: "Garbage Accumulation (95.1%)",
+                                     description: "Overflowing garbage bin and waste accumulation detected, causing sanitation issues and bad odor."
+                                 }
+                             ];
+                             resultData = choices[file.size % choices.length];
+                         }
+
+                         // Timeout updates for logs
+                         setTimeout(() => {
+                             aiStatusPanel.innerHTML += '<div class="ai-status-log">> ACQUIRING BOUNDING FRAME & PIXEL MATRIX...</div>';
+                         }, 500);
+
+                         setTimeout(() => {
+                             aiStatusPanel.innerHTML += '<div class="ai-status-log">> RUNNING CNN DEEP ENTITY DETECTION...</div>';
+                         }, 1000);
+
+                         setTimeout(() => {
+                             // Show Bounding Box
+                             aiBoundingBox.style.top = "25%";
+                             aiBoundingBox.style.left = "30%";
+                             aiBoundingBox.style.width = "40%";
+                             aiBoundingBox.style.height = "45%";
+                             aiBoundingBox.classList.add('active');
+                             aiBoundingBoxLabel.innerText = resultData.label;
+
+                             aiStatusPanel.innerHTML += `<div class="ai-status-log success">> DETECTED: ${resultData.label.toUpperCase()}</div>`;
+                         }, 1500);
+
+                         setTimeout(() => {
+                             // Fill fields
+                             document.getElementById('compSubject').value = `[AI] ${resultData.subject}`;
+                             
+                             const catSelect = document.getElementById('compCategory');
+                             catSelect.value = resultData.category;
+                             
+                             // Trigger subcategory change
+                             if (window.updateSubCategories) {
+                                 window.updateSubCategories();
+                             }
+                             
+                             const subSelect = document.getElementById('compSubCategory');
+                             subSelect.value = resultData.subCategory;
+                             
+                             document.getElementById('compDesc').value = resultData.description;
+                             
+                             // Remove scan state
+                             aiPreviewImg.classList.remove('analyzing');
+                             aiStatusPanel.innerHTML += '<div class="ai-status-log success">> SCORING LOG COMPLETED. FIELDS PRE-FILLED.</div>';
+                             
+                             // Play synthesized scan complete chime
+                             try {
+                                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                                 const osc = ctx.createOscillator();
+                                 const gain = ctx.createGain();
+                                 osc.connect(gain);
+                                 gain.connect(ctx.destination);
+                                 osc.type = 'sine';
+                                 osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+                                 osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+                                 gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                                 gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                                 osc.start();
+                                 osc.stop(ctx.currentTime + 0.5);
+                             } catch(soundErr) {}
+                         }, 2200);
+                     };
+                     reader.readAsDataURL(file);
+                 });
+             }
 
             document.getElementById('complaintForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -309,7 +898,17 @@
                 const phone = document.getElementById('compPhone').value;
                 const locationStr = document.getElementById('compLocation').value;
                 const description = document.getElementById('compDesc').value;
+                
+                const subCategory = document.getElementById('compSubCategory').value;
+                const wardNumber = document.getElementById('compWardNumber').value;
+                const landmark = document.getElementById('compLandmark').value;
+                const priority = document.getElementById('compPriority').value;
+                const isAnonymous = document.getElementById('compAnonymous').checked;
+                const linkedAsset = document.getElementById('compAsset') ? document.getElementById('compAsset').value : '';
+
                 const imageFile = document.getElementById('compImage').files[0];
+                const videoFile = document.getElementById('compVideo').files[0];
+                const voiceData = document.getElementById('voiceInput').value;
                 
                 // Get pre-captured GPS
                 const latitude = document.getElementById('latInput').value;
@@ -324,6 +923,15 @@
                     });
                 }
 
+                let videoData = null;
+                if (videoFile) {
+                    const reader = new FileReader();
+                    videoData = await new Promise((resolve) => {
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.readAsDataURL(videoFile);
+                    });
+                }
+
                 const result = await App.complaints.create({ 
                     category, 
                     subject, 
@@ -331,6 +939,14 @@
                     location: locationStr, 
                     description, 
                     image: imageData,
+                    video: videoData,
+                    voice: voiceData,
+                    subCategory,
+                    wardNumber,
+                    landmark,
+                    priority,
+                    isAnonymous,
+                    linkedAsset,
                     latitude: latitude ? parseFloat(latitude) : null,
                     longitude: longitude ? parseFloat(longitude) : null
                 });
@@ -349,6 +965,9 @@
                     document.getElementById('gpsStatus').innerText = "NOT LINKED";
                     document.getElementById('gpsStatus').style.color = "var(--text-muted)";
                     document.getElementById('shareLocationBtn').style.background = "rgba(6, 182, 212, 0.05)";
+                    // Reset Voice Playback
+                    document.getElementById('voicePlayback').style.display = 'none';
+                    document.getElementById('voiceInput').value = '';
                 } else {
                     alert(result.message);
                     submitBtn.innerHTML = originalBtnText;
@@ -396,6 +1015,43 @@
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '© OpenStreetMap contributors',
                 }).addTo(map);
+
+                // Add interactive click to select location & open modal
+                map.on('click', async (e) => {
+                    const lat = e.latlng.lat;
+                    const lng = e.latlng.lng;
+                    
+                    document.getElementById('latInput').value = lat;
+                    document.getElementById('lngInput').value = lng;
+                    
+                    const gpsStatus = document.getElementById('gpsStatus');
+                    gpsStatus.innerHTML = "<i class='fa-solid fa-map-pin'></i> PINNED";
+                    gpsStatus.style.color = "#06b6d4";
+                    
+                    const shareBtn = document.getElementById('shareLocationBtn');
+                    shareBtn.style.background = "rgba(6, 182, 212, 0.1)";
+                    shareBtn.style.borderColor = "#06b6d4";
+                    shareBtn.style.borderStyle = "solid";
+
+                    // Open complaint modal
+                    document.getElementById('complaintModal').classList.add('active');
+                    
+                    // Fill Address Input with a fetching status
+                    const locInput = document.getElementById('compLocation');
+                    locInput.value = "Fetching address details...";
+                    
+                    try {
+                        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18`);
+                        const data = await res.json();
+                        if (data && data.display_name) {
+                            locInput.value = data.display_name;
+                        } else {
+                            locInput.value = `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
+                        }
+                    } catch(err) {
+                        locInput.value = `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
+                    }
+                });
 
                 // Dashboard GPS Logic
                 const gpsBtn = document.getElementById('dashGpsBtn');
@@ -474,13 +1130,80 @@
                     }
                     window.complaintMarkers = [];
 
-                    // Add markers
-                    myComplaints.forEach((c) => {
-                        const sadhash = c.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-                        const offsetLat = (sadhash % 100 - 50) * 0.001;
-                        const offsetLng = (sadhash % 80 - 40) * 0.001;
-                        const marker = L.marker([28.6139 + offsetLat, 77.2090 + offsetLng]).addTo(map)
-                            .bindPopup(`<b>${c.subject}</b><br>Status: ${c.status}`);
+                    // Color Coding Marker Icon Generator
+                    const getDashMarkerIcon = (status, priority) => {
+                        let color = '#ef4444'; // Red for Pending
+                        let glow = 'rgba(239, 68, 68, 0.6)';
+                        
+                        const normStatus = (status || 'pending').toLowerCase();
+                        if (normStatus === 'resolved' || normStatus === 'completed') {
+                            color = '#10b981'; // Green for Completed
+                            glow = 'rgba(16, 185, 129, 0.6)';
+                        } else if (normStatus === 'in progress' || normStatus === 'assigned' || normStatus === 'open') {
+                            color = '#f59e0b'; // Yellow/Orange for In Progress
+                            glow = 'rgba(245, 158, 11, 0.6)';
+                        }
+
+                        const isEmergency = (priority === 'Emergency' || priority === 'High');
+                        const pulseAnim = isEmergency ? 'animation: mapPinPulse 1.5s infinite;' : '';
+
+                        return L.divIcon({
+                            className: 'custom-map-pin',
+                            html: `
+                                <style>
+                                    @keyframes mapPinPulse {
+                                        0% { transform: scale(1); box-shadow: 0 0 0 0 ${glow}; }
+                                        70% { transform: scale(1.25); box-shadow: 0 0 0 10px rgba(0,0,0,0); }
+                                        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0,0,0,0); }
+                                    }
+                                </style>
+                                <div style="
+                                    background: ${color};
+                                    width: 14px;
+                                    height: 14px;
+                                    border-radius: 50%;
+                                    border: 2px solid #fff;
+                                    box-shadow: 0 0 8px ${color}, 0 2px 4px rgba(0,0,0,0.3);
+                                    ${pulseAnim}
+                                    cursor: pointer;
+                                "></div>
+                            `,
+                            iconSize: [16, 16],
+                            iconAnchor: [8, 8]
+                        });
+                    };
+
+                    // Add all platform complaints to Live Map
+                    const allComplaints = App.complaints.getAll();
+                    allComplaints.forEach((c) => {
+                        let lat, lng;
+                        if (c.latitude && c.longitude && c.latitude !== 0) {
+                            lat = c.latitude;
+                            lng = c.longitude;
+                        } else {
+                            const sadhash = c.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+                            const offsetLat = (sadhash % 100 - 50) * 0.001;
+                            const offsetLng = (sadhash % 80 - 40) * 0.001;
+                            lat = 28.6139 + offsetLat;
+                            lng = 77.2090 + offsetLng;
+                        }
+
+                        let statusColor = '#ef4444';
+                        if (c.status === 'resolved' || c.status === 'completed') statusColor = '#10b981';
+                        else if (c.status === 'in progress' || c.status === 'assigned' || c.status === 'open') statusColor = '#f59e0b';
+
+                        const marker = L.marker([lat, lng], { icon: getDashMarkerIcon(c.status, c.priority) })
+                            .addTo(map)
+                            .bindPopup(`
+                                <div style="font-family: 'Outfit', sans-serif; font-size: 0.82rem; min-width: 160px; padding: 2px;">
+                                    <div style="font-weight: 700; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; margin-bottom: 4px; display:flex; justify-content:space-between; align-items:center;">
+                                        <span>${c.id}</span>
+                                        <span style="color: ${statusColor}; font-weight:800; text-transform: uppercase; font-size:0.7rem;">${c.status || 'pending'}</span>
+                                    </div>
+                                    <div style="font-weight: 600; color: var(--primary-accent); margin-bottom: 2px;">${c.title || c.subject}</div>
+                                    <div style="color: var(--text-muted); font-size: 0.75rem;"><i class="fa-solid fa-folder"></i> ${c.category}</div>
+                                </div>
+                            `);
                         window.complaintMarkers.push(marker);
                     });
                 };

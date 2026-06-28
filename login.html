@@ -78,6 +78,26 @@
                     <button class="btn btn-secondary" style="width: 100%; margin-top: 15px;">Enter Portal</button>
                 </div>
 
+                <!-- Department Head Card -->
+                <div class="portal-card" onclick="selectRole('dept')">
+                    <div class="portal-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                        <i class="fa-solid fa-building-user"></i>
+                    </div>
+                    <h3>Department Head</h3>
+                    <p>Manage department queues, assign tasks, and merge alerts.</p>
+                    <button class="btn btn-secondary" style="width: 100%; margin-top: 15px;">Enter Portal</button>
+                </div>
+
+                <!-- Commissioner Card -->
+                <div class="portal-card" onclick="selectRole('commissioner')">
+                    <div class="portal-icon" style="background: rgba(168, 85, 247, 0.1); color: #a855f7;">
+                        <i class="fa-solid fa-crown"></i>
+                    </div>
+                    <h3>Commissioner</h3>
+                    <p>High-level municipal insights, SLA compliance, and decisions.</p>
+                    <button class="btn btn-secondary" style="width: 100%; margin-top: 15px;">Enter Portal</button>
+                </div>
+
                 <!-- Admin Card -->
                 <div class="portal-card" onclick="selectRole('admin')">
                     <div class="portal-icon" style="background: rgba(244, 63, 94, 0.1); color: #f43f5e;">
@@ -105,29 +125,126 @@
                 <p id="portalSubtitle" style="color: var(--text-light); font-size: 0.9rem;">Please enter your credentials to continue.</p>
             </div>
 
+            <!-- Citizen Login Tabs -->
+            <div id="loginMethodTabs" style="display: none; gap: 10px; margin-bottom: 25px;">
+                <button type="button" onclick="setLoginMethod('password')" id="tabPassword" class="btn btn-secondary active" style="flex: 1; padding: 12px; font-size: 0.85rem; border-radius: 12px; font-weight: 600;">Email Login</button>
+                <button type="button" onclick="setLoginMethod('otp')" id="tabOTP" class="btn btn-secondary" style="flex: 1; padding: 12px; font-size: 0.85rem; border-radius: 12px; font-weight: 600;">Mobile OTP</button>
+            </div>
+
             <p id="errorMsg" class="error-msg"></p>
             <form id="loginForm">
-                <div class="form-group">
-                    <label data-i18n="form_email">Email or Phone Number</label>
-                    <input type="text" id="email" placeholder="john@example.com or 9876543210" required>
+                <!-- Email/Password Fields -->
+                <div id="passwordFields">
+                    <div class="form-group">
+                        <label id="emailLabel" data-i18n="form_email">Email or Phone Number</label>
+                        <input type="text" id="email" placeholder="john@example.com or 9876543210" required>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="form_pass">Password</label>
+                        <input type="password" id="password" placeholder="••••••••" required>
+                    </div>
+                    <!-- CAPTCHA Section -->
+                    <div class="form-group" style="background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; margin-top: 15px;">
+                        <label style="display:flex; justify-content:space-between; align-items:center;">
+                            <span>Security CAPTCHA Verification</span>
+                            <span onclick="regenerateCaptcha()" style="color: var(--primary-accent); cursor: pointer; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-arrows-rotate"></i> Refresh</span>
+                        </label>
+                        <div style="display:flex; align-items:center; gap:15px; margin-top: 8px;">
+                            <div id="captchaQuestion" style="background: linear-gradient(135deg, rgba(6,182,212,0.1), rgba(99,102,241,0.1)); padding: 10px 20px; border-radius: 8px; font-weight: bold; color: var(--primary-accent); font-family: monospace; font-size: 1.2rem; border: 1px solid rgba(6,182,212,0.2); letter-spacing: 2px;">5 + 3 = ?</div>
+                            <input type="text" id="captchaAnswer" placeholder="Answer" required style="flex:1; margin: 0; padding: 10px; text-align: center; font-size: 1.1rem; font-weight: bold;">
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label data-i18n="form_pass">Password</label>
-                    <input type="password" id="password" placeholder="••••••••" required>
-                </div>
-                <button type="submit" class="btn btn-primary btn-block" data-i18n="login_btn">Login</button>
 
-                <div style="position: relative; margin: 30px 0;">
-                    <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-                    <span style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #0f172a; padding: 0 15px; color: var(--text-light); font-size: 0.85rem; font-weight: 600;">OR</span>
+                <!-- OTP Login Fields -->
+                <div id="otpFields" style="display: none;">
+                    <div class="form-group">
+                        <label>Mobile Number</label>
+                        <input type="text" id="loginMobile" placeholder="9876543210">
+                    </div>
+                    <button type="button" id="btnSendLoginOTP" onclick="sendLoginOTP()" class="btn btn-secondary btn-block" style="margin-top: 10px; border-radius: 12px; background: rgba(6, 182, 212, 0.1); border-color: rgba(6, 182, 212, 0.2); color: var(--primary-accent);">
+                        <i class="fa-solid fa-paper-plane"></i> Send OTP
+                    </button>
+                    
+                    <div id="loginOTPContainer" style="display: none; margin-top: 20px;">
+                        <div id="loginOtpNotification" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.15)); padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                                <i class="fa-solid fa-shield-halved" style="color: #10b981; font-size: 1.3rem;"></i>
+                                <span style="color: #d1d5db; font-size: 0.85rem;">Verification Code (Simulated):</span>
+                            </div>
+                            <div id="loginOtpDisplayCode" style="font-size: 2rem; font-weight: 800; letter-spacing: 12px; color: #10b981; text-align: center; margin-top: 8px; font-family: monospace;"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Enter 6-Digit OTP</label>
+                            <input type="text" id="loginOtpCode" placeholder="0 0 0 0 0 0" maxlength="6" style="text-align: center; letter-spacing: 15px; font-size: 1.5rem; font-weight: bold; background: rgba(0,0,0,0.3);">
+                        </div>
+                    </div>
                 </div>
 
-                <button type="button" onclick="startFaceAuth()" class="btn btn-secondary btn-block"
-                    style="margin-top: 0; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; display: flex; align-items: center; justify-content: center; gap: 10px; backdrop-filter: blur(10px);">
-                    <i class="fa-solid fa-face-smile" style="color: var(--primary-accent); font-size: 1.2rem;"></i>
-                    Login with Face ID
-                </button>
+                <button type="submit" id="btnLoginSubmit" class="btn btn-primary btn-block" data-i18n="login_btn" style="margin-top: 20px;">Login</button>
+
+                <!-- Biometric Alternative Option -->
+                <div id="biometricContainer">
+                    <div style="position: relative; margin: 30px 0;">
+                        <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                        <span style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #0f172a; padding: 0 15px; color: var(--text-light); font-size: 0.85rem; font-weight: 600;">OR</span>
+                    </div>
+
+                    <button type="button" onclick="startFaceAuth()" class="btn btn-secondary btn-block"
+                        style="margin-top: 0; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; display: flex; align-items: center; justify-content: center; gap: 10px; backdrop-filter: blur(10px);">
+                        <i class="fa-solid fa-face-smile" style="color: var(--primary-accent); font-size: 1.2rem;"></i>
+                        Login with Face ID
+                    </button>
+                </div>
+
+                <!-- Guest Complaint Option -->
+                <div id="guestLoginContainer" style="display: none;">
+                    <div style="position: relative; margin: 25px 0;">
+                        <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                        <span style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #0f172a; padding: 0 15px; color: var(--text-light); font-size: 0.85rem; font-weight: 600;">OR</span>
+                    </div>
+
+                    <button type="button" onclick="loginAsGuest()" class="btn btn-secondary btn-block"
+                        style="margin-top: 0; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; display: flex; align-items: center; justify-content: center; gap: 10px; border-radius: 12px;">
+                        <i class="fa-solid fa-user-secret" style="font-size: 1.2rem;"></i>
+                        File Complaint as Guest
+                    </button>
+                </div>
             </form>
+        </div>
+    </div>
+
+
+    <!-- 2FA Verification Modal -->
+    <div id="twoFactorModal" class="modal" style="z-index: 10001;">
+        <div class="modal-content" style="max-width: 440px; text-align: center; padding: 2.5rem; border-radius: 24px; background: rgba(15, 23, 42, 0.98); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 50px rgba(99, 102, 241, 0.25);">
+            <div style="width: 70px; height: 70px; background: rgba(99, 102, 241, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; border: 1px solid rgba(99,102,241,0.3);">
+                <i class="fa-solid fa-key" style="font-size: 1.8rem; color: #6366f1;"></i>
+            </div>
+            <h3 style="font-size: 1.6rem; margin-bottom: 8px; color: white;">2FA Authentication Required</h3>
+            <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 20px;">A verification OTP code has been sent to your registered device.</p>
+            
+            <!-- Simulated SMS/Email Notification Banner -->
+            <div id="twoFactorNotification" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.15)); padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(99, 102, 241, 0.3);">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <i class="fa-solid fa-mobile-screen-button" style="color: #6366f1; font-size: 1.2rem;"></i>
+                    <span style="color: #cbd5e1; font-size: 0.85rem; font-weight: 500;">Simulated 2FA Device OTP:</span>
+                </div>
+                <div id="twoFactorDisplayCode" style="font-size: 2.2rem; font-weight: 800; letter-spacing: 10px; color: #6366f1; text-align: center; margin-top: 8px; font-family: monospace;"></div>
+            </div>
+
+            <div class="form-group" style="text-align: left;">
+                <label style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 8px; font-weight: 600;">Enter 6-Digit Code</label>
+                <input type="text" id="twoFactorCode" placeholder="000000" maxlength="6" style="text-align: center; letter-spacing: 12px; font-size: 1.6rem; font-weight: bold; background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.15); height: 50px;">
+            </div>
+
+            <p id="twoFactorError" class="error-msg" style="display: none; margin-bottom: 15px; color: #ef4444; font-size: 0.85rem;"></p>
+
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button type="button" onclick="close2FA()" class="btn btn-secondary" style="flex: 1; border-radius: 12px; padding: 12px;">Cancel</button>
+                <button type="button" onclick="verify2FA()" class="btn btn-primary" style="flex: 1; border-radius: 12px; padding: 12px;">Verify & Login</button>
+            </div>
         </div>
     </div>
 
@@ -138,7 +255,7 @@
             style="text-align: center; max-width: 480px; padding: 2.5rem; border-radius: 30px; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 50px rgba(6, 182, 212, 0.2);">
             <div id="faceScanStage">
                 <h3
-                    style="font-size: 1.8rem; margin-bottom: 10px; background: linear-gradient(to right, #fff, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    style="font-size: 1.8rem; margin-bottom: 10px; background: linear-gradient(to right, #fff, #06b6d4); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
                     Biometric Verification</h3>
                 <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 20px;">AI Secure Face Recognition
                     System</p>
@@ -246,6 +363,8 @@
     <script>
         App.i18n.init();
 
+        window.currentLoginMethod = 'password';
+
         window.selectRole = (role) => {
             window.currentSelectedRole = role;
             const selection = document.getElementById('roleSelection');
@@ -253,28 +372,186 @@
             const title = document.getElementById('portalTitle');
             const icon = document.getElementById('portalIcon');
             const emailInput = document.getElementById('email');
+            
+            const tabs = document.getElementById('loginMethodTabs');
+            const guestContainer = document.getElementById('guestLoginContainer');
 
             selection.style.display = 'none';
             form.style.display = 'block';
+
+            // Reset login method to password on select
+            window.setLoginMethod('password');
 
             if (role === 'admin') {
                 title.innerText = "Admin Portal Login";
                 icon.innerHTML = '<i class="fa-solid fa-user-gear"></i>';
                 icon.style.background = 'rgba(244, 63, 94, 0.1)';
                 icon.style.color = '#f43f5e';
-                emailInput.placeholder = 'admin@smartcomplaint.com';
+                emailInput.placeholder = 'admin@smartcity.com';
+                tabs.style.display = 'none';
+                guestContainer.style.display = 'none';
             } else if (role === 'officer') {
                 title.innerText = "Officer Portal Login";
                 icon.innerHTML = '<i class="fa-solid fa-user-shield"></i>';
                 icon.style.background = 'rgba(99, 102, 241, 0.1)';
                 icon.style.color = '#6366f1';
-                emailInput.placeholder = 'officer@smartcomplaint.com';
+                emailInput.placeholder = 'officer@smartcity.com';
+                tabs.style.display = 'none';
+                guestContainer.style.display = 'none';
+            } else if (role === 'dept') {
+                title.innerText = "Department Head Login";
+                icon.innerHTML = '<i class="fa-solid fa-building-user"></i>';
+                icon.style.background = 'rgba(16, 185, 129, 0.1)';
+                icon.style.color = '#10b981';
+                emailInput.placeholder = 'dept.roads@smartcity.com';
+                tabs.style.display = 'none';
+                guestContainer.style.display = 'none';
+            } else if (role === 'commissioner') {
+                title.innerText = "Commissioner Login";
+                icon.innerHTML = '<i class="fa-solid fa-crown"></i>';
+                icon.style.background = 'rgba(168, 85, 247, 0.1)';
+                icon.style.color = '#a855f7';
+                emailInput.placeholder = 'commissioner@smartcity.com';
+                tabs.style.display = 'none';
+                guestContainer.style.display = 'none';
             } else {
                 title.innerText = "Citizen Portal Login";
                 icon.innerHTML = '<i class="fa-solid fa-user"></i>';
                 icon.style.background = 'rgba(6, 182, 212, 0.1)';
                 icon.style.color = '#06b6d4';
-                emailInput.placeholder = 'citizen@smartcomplaint.com';
+                emailInput.placeholder = 'citizen@smartcity.com';
+                tabs.style.display = 'flex';
+                guestContainer.style.display = 'block';
+            }
+        };
+
+        window.setLoginMethod = (method) => {
+            window.currentLoginMethod = method;
+            const tabPass = document.getElementById('tabPassword');
+            const tabOTP = document.getElementById('tabOTP');
+            const passFields = document.getElementById('passwordFields');
+            const otpFields = document.getElementById('otpFields');
+            const btnSubmit = document.getElementById('btnLoginSubmit');
+            const biometricContainer = document.getElementById('biometricContainer');
+
+            if (method === 'password') {
+                tabPass.classList.add('active');
+                tabOTP.classList.remove('active');
+                passFields.style.display = 'block';
+                otpFields.style.display = 'none';
+                btnSubmit.innerText = "Login";
+                biometricContainer.style.display = 'block';
+                
+                document.getElementById('email').setAttribute('required', '');
+                document.getElementById('password').setAttribute('required', '');
+                document.getElementById('loginMobile').removeAttribute('required');
+            } else {
+                tabPass.classList.remove('active');
+                tabOTP.classList.add('active');
+                passFields.style.display = 'none';
+                otpFields.style.display = 'block';
+                btnSubmit.innerText = "Verify & Login";
+                biometricContainer.style.display = 'none';
+                
+                document.getElementById('email').removeAttribute('required');
+                document.getElementById('password').removeAttribute('required');
+                document.getElementById('loginMobile').setAttribute('required', '');
+            }
+        };
+
+        window.sendLoginOTP = async () => {
+            const phone = document.getElementById('loginMobile').value;
+            const err = document.getElementById('errorMsg');
+            err.style.display = 'none';
+
+            if (!phone || phone.length < 10) {
+                err.innerText = "Please enter a valid 10-digit mobile number.";
+                err.style.display = 'block';
+                return;
+            }
+
+            const result = await App.auth.sendOtp(phone);
+            if (result.success) {
+                document.getElementById('loginOTPContainer').style.display = 'block';
+                document.getElementById('loginOtpDisplayCode').innerText = result.otp;
+            } else {
+                err.innerText = result.message || "Failed to send OTP.";
+                err.style.display = 'block';
+            }
+        };
+
+        window.loginAsGuest = async () => {
+            const err = document.getElementById('errorMsg');
+            err.style.display = 'none';
+            try {
+                const response = await fetch(`${App.api.baseUrl}/auth/guest`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    App.store.setCurrentUser(result.user);
+                    if (result.token) localStorage.setItem('sc_auth_token', result.token);
+                    await App.store.loadData();
+                    window.location.href = 'dashboard.html';
+                } else {
+                    err.innerText = result.message || "Guest login failed.";
+                    err.style.display = 'block';
+                }
+            } catch (e) {
+                err.innerText = "Connection to server failed.";
+                err.style.display = 'block';
+            }
+        };
+
+        window.goBack = () => {
+            document.getElementById('roleSelection').style.display = 'block';
+            document.getElementById('loginFormCard').style.display = 'none';
+        };
+
+        let captchaResult = 0;
+        window.regenerateCaptcha = () => {
+            const num1 = Math.floor(Math.random() * 15) + 1;
+            const num2 = Math.floor(Math.random() * 15) + 1;
+            captchaResult = num1 + num2;
+            const qEl = document.getElementById('captchaQuestion');
+            if (qEl) qEl.innerText = `${num1} + ${num2} = ?`;
+            const aEl = document.getElementById('captchaAnswer');
+            if (aEl) aEl.value = '';
+        };
+
+        // Initialize captcha
+        setTimeout(window.regenerateCaptcha, 100);
+
+        let active2FAUser = null;
+        let generated2FAOTP = '';
+
+        window.close2FA = () => {
+            document.getElementById('twoFactorModal').classList.remove('active');
+            document.getElementById('twoFactorCode').value = '';
+            document.getElementById('twoFactorError').style.display = 'none';
+        };
+
+        window.verify2FA = async () => {
+            const code = document.getElementById('twoFactorCode').value.trim();
+            const err = document.getElementById('twoFactorError');
+            err.style.display = 'none';
+
+            if (code === generated2FAOTP) {
+                // Restore session tokens now that 2FA passed
+                App.store.setCurrentUser(active2FAUser.user);
+                if (active2FAUser.token) localStorage.setItem('sc_auth_token', active2FAUser.token);
+                await App.store.loadData();
+                
+                 const role = active2FAUser.user.role;
+                 if (role === 'admin') window.location.href = 'admin.html';
+                 else if (role === 'officer') window.location.href = 'officer.html';
+                 else if (role === 'dept') window.location.href = 'admin.html?role=dept';
+                 else if (role === 'commissioner') window.location.href = 'admin.html?role=commissioner';
+                 else window.location.href = 'dashboard.html';
+            } else {
+                err.innerText = "Invalid 2FA OTP code. Please try again.";
+                err.style.display = 'block';
             }
         };
 
@@ -285,9 +562,63 @@
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            await performLogin(email, password);
+            const err = document.getElementById('errorMsg');
+            err.style.display = 'none';
+
+            if (window.currentLoginMethod === 'password') {
+                // Verify CAPTCHA
+                const answer = parseInt(document.getElementById('captchaAnswer').value);
+                if (isNaN(answer) || answer !== captchaResult) {
+                    err.innerText = "Incorrect CAPTCHA answer. Please try again.";
+                    err.style.display = 'block';
+                    window.regenerateCaptcha();
+                    return;
+                }
+
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                await performLogin(email, password);
+            } else {
+                const phone = document.getElementById('loginMobile').value;
+                const otp = document.getElementById('loginOtpCode').value;
+                if (!otp) {
+                    err.innerText = "Please enter the OTP code to verify.";
+                    err.style.display = 'block';
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${App.api.baseUrl}/auth/otp-login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: phone, otp })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        // For OTP login also support 2FA if role is admin/officer, else directly login
+                        const role = result.user.role;
+                        if (role === 'admin' || role === 'officer') {
+                            active2FAUser = result;
+                            localStorage.removeItem('sc_current_user');
+                            localStorage.removeItem('sc_auth_token');
+                            generated2FAOTP = Math.floor(100000 + Math.random() * 900000).toString();
+                            document.getElementById('twoFactorDisplayCode').innerText = generated2FAOTP;
+                            document.getElementById('twoFactorModal').classList.add('active');
+                        } else {
+                            App.store.setCurrentUser(result.user);
+                            if (result.token) localStorage.setItem('sc_auth_token', result.token);
+                            await App.store.loadData();
+                            window.location.href = 'dashboard.html';
+                        }
+                    } else {
+                        err.innerText = result.message || "Invalid OTP code.";
+                        err.style.display = 'block';
+                    }
+                } catch(e) {
+                    err.innerText = "Server connection error.";
+                    err.style.display = 'block';
+                }
+            }
         });
 
         async function performLogin(email, password) {
@@ -305,13 +636,25 @@
                     localStorage.removeItem('sc_auth_token');
                     return;
                 }
-                if (role === 'admin') window.location.href = 'admin.html';
-                else if (role === 'officer') window.location.href = 'officer.html';
-                else window.location.href = 'dashboard.html';
+                
+                // Trigger 2FA
+                active2FAUser = result;
+                
+                // Clear session tokens temporarily until 2FA completes
+                localStorage.removeItem('sc_current_user');
+                localStorage.removeItem('sc_auth_token');
+
+                // Generate OTP
+                generated2FAOTP = Math.floor(100000 + Math.random() * 900000).toString();
+                document.getElementById('twoFactorDisplayCode').innerText = generated2FAOTP;
+                
+                // Show modal
+                document.getElementById('twoFactorModal').classList.add('active');
             } else {
                 const err = document.getElementById('errorMsg');
                 err.innerText = result.message || "Login failed - make sure server is running";
                 err.style.display = 'block';
+                window.regenerateCaptcha();
             }
         }
 
@@ -334,7 +677,10 @@
             status.innerText = "Requesting biometric access...";
 
             try {
-                videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('NOT_SUPPORTED');
+                }
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 } });
                 video.srcObject = videoStream;
                 status.innerText = "Align your face with the camera";
                 captureBtn.style.display = 'block';
@@ -342,8 +688,15 @@
                 scanLine.style.display = 'block';
 
             } catch (err) {
-                console.error(err);
-                status.innerText = "Biometric hardware not found or access denied.";
+                console.error("Camera error:", err);
+                if (err.message === 'NOT_SUPPORTED' || err.name === 'TypeError') {
+                    status.innerHTML = "<span style='color:#ef4444;'>⚠️ Camera not available.</span><br><small style='color:var(--text-muted);'>Page must be opened via <b>http://localhost:3000</b> or <b>http://127.0.0.1:3000</b>.<br>File:// URLs do not support camera access.</small>";
+                    alert("Camera permission requires a secure context.\n\nPlease open the app from:\nhttp://localhost:3000/login.html\n\nDo NOT open the HTML file directly from your file explorer.");
+                } else if (err.name === 'NotAllowedError') {
+                    status.innerHTML = "<span style='color:#ef4444;'>⚠️ Camera permission denied.</span><br><small style='color:var(--text-muted);'>Click the lock/camera icon in your browser address bar → Allow camera → Reload page.</small>";
+                } else {
+                    status.innerText = "Error: Camera access required for Face ID. (" + err.message + ")";
+                }
             }
         };
 

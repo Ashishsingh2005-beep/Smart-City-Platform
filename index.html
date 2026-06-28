@@ -634,23 +634,125 @@
                     if (e.target === trackModal) trackModal.classList.remove('active');
                 });
 
-                document.getElementById('trackForm').addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    const id = document.getElementById('trackId').value;
-                    const complaints = App.store.getComplaints(); // Using App logic from app.js
-                    const found = complaints.find(c => c.id === id);
+                let selectedRating = 5;
+                window.setFeedbackRating = (rating) => {
+                    selectedRating = rating;
+                    for (let i = 1; i <= 5; i++) {
+                        const star = document.getElementById('star' + i);
+                        if (star) {
+                            if (i <= rating) {
+                                star.className = 'fa-star fa-solid';
+                            } else {
+                                star.className = 'fa-star fa-regular';
+                            }
+                        }
+                    }
+                };
 
+                window.submitCitizenFeedback = async (complaintId) => {
+                    const feedbackText = document.getElementById('feedbackText').value;
+                    const user = App.store.getCurrentUser();
+                    if (!user) {
+                        alert("Please log in to submit feedback!");
+                        return;
+                    }
+                    const btn = document.querySelector('#feedbackFormSection button');
+                    btn.disabled = true;
+                    btn.innerText = "Submitting...";
+                    
+                    const success = await App.complaints.submitFeedback(complaintId, selectedRating, feedbackText);
+                    if (success) {
+                        alert("Feedback submitted successfully!");
+                        // Re-trigger submit to refresh details
+                        document.getElementById('trackForm').dispatchEvent(new Event('submit'));
+                    } else {
+                        alert("Failed to submit feedback. Ensure server is running.");
+                        btn.disabled = false;
+                        btn.innerText = "Submit Feedback";
+                    }
+                };
+
+                document.getElementById('trackForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const rawId = document.getElementById('trackId').value;
                     const resDiv = document.getElementById('trackResult');
                     resDiv.style.display = 'block';
+                    resDiv.innerHTML = `<p style="color: var(--text-light);"><i class="fa-solid fa-spinner fa-spin"></i> Fetching live status from ledger...</p>`;
+
+                    // Fetch latest from server
+                    const allComps = await App.api.get('/complaints') || App.store.getComplaints();
+                    const query = rawId.trim().toUpperCase();
+                    const found = allComps.find(c => {
+                        const cid = (c.id || '').toUpperCase();
+                        const ccid = (c.complaint_id || '').toUpperCase();
+                        return cid === query || ccid === query || cid === `#${query}` || ccid === `#${query}` || query === cid.replace('#', '');
+                    });
 
                     if (found) {
+                        // Render detailed info with timeline
+                        let currentIdx = 0;
+                        if (found.status === 'pending') currentIdx = 0;
+                        else if (found.status === 'assigned' || found.status === 'open') currentIdx = 1;
+                        else if (found.status === 'accepted') currentIdx = 2;
+                        else if (found.status === 'in_progress' || found.status === 'work_started') currentIdx = 3;
+                        else if (found.status === 'resolved' || found.status === 'completed') currentIdx = 4;
+                        else if (found.status === 'feedback_submitted') currentIdx = 5;
+
+                        const stages = [
+                            { label: "Submitted", detail: "Complaint logged securely" },
+                            { label: "Assigned", detail: found.assigned_to && found.assigned_to !== 'Unassigned' ? `Assigned to ${found.assigned_to}` : "Pending assignment" },
+                            { label: "Accepted", detail: found.status === 'pending' || found.status === 'open' ? "Awaiting acceptance" : "Task accepted by department" },
+                            { label: "Work Started", detail: (found.status === 'in_progress' || found.status === 'resolved' || found.status === 'feedback_submitted') ? "Work order executed on-site" : "Pending work start" },
+                            { label: "Completed", detail: found.adminReply ? `Resolved: ${found.adminReply}` : ((found.status === 'resolved' || found.status === 'feedback_submitted') ? "Marked as resolved" : "Pending completion") },
+                            { label: "Citizen Feedback", detail: found.feedback ? `Rating: ${found.feedback.rating}/5 | "${found.feedback.text}"` : "Awaiting citizen feedback" }
+                        ];
+
+                        let stepperHtml = `<div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 15px; border-left: 2px solid rgba(255,255,255,0.1); padding-left: 20px; position: relative; text-align: left;">`;
+                        stages.forEach((stage, idx) => {
+                            const isActive = idx <= currentIdx;
+                            const color = isActive ? '#06b6d4' : 'rgba(255,255,255,0.2)';
+                            const dotBg = isActive ? '#06b6d4' : '#1e293b';
+                            const textColor = isActive ? '#fff' : 'rgba(255,255,255,0.4)';
+                            const pulse = idx === currentIdx && found.status !== 'resolved' && found.status !== 'feedback_submitted' ? 'animation: pulse 1.5s infinite;' : '';
+
+                            stepperHtml += `
+                                <div style="position: relative; margin-bottom: 5px;">
+                                    <div style="position: absolute; left: -26px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: ${dotBg}; border: 2px solid ${color}; ${pulse}"></div>
+                                    <div style="font-weight: 600; color: ${color}; font-size: 0.9rem;">${stage.label}</div>
+                                    <div style="font-size: 0.8rem; color: ${textColor}; margin-top: 2px;">${stage.detail}</div>
+                                </div>
+                            `;
+                        });
+                        stepperHtml += `</div>`;
+
+                        let feedbackHtml = '';
+                        if (found.status === 'resolved') {
+                            feedbackHtml = `
+                                <div id="feedbackFormSection" style="margin-top: 1.5rem; padding: 15px; border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 12px; background: rgba(6, 182, 212, 0.05); text-align: left;">
+                                    <h4 style="font-size: 0.95rem; margin-bottom: 10px; color: #06b6d4;">Submit Citizen Feedback</h4>
+                                    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                                        <span style="font-size: 0.85rem; color: var(--text-light);">Rating:</span>
+                                        <div style="display: flex; gap: 5px; color: #fbbf24; cursor: pointer;">
+                                            <i class="fa-star fa-solid" onclick="setFeedbackRating(1)" id="star1"></i>
+                                            <i class="fa-star fa-solid" onclick="setFeedbackRating(2)" id="star2"></i>
+                                            <i class="fa-star fa-solid" onclick="setFeedbackRating(3)" id="star3"></i>
+                                            <i class="fa-star fa-solid" onclick="setFeedbackRating(4)" id="star4"></i>
+                                            <i class="fa-star fa-solid" onclick="setFeedbackRating(5)" id="star5"></i>
+                                        </div>
+                                    </div>
+                                    <textarea id="feedbackText" placeholder="Add your feedback comments here..." style="width: 100%; font-size: 0.85rem; background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff; padding: 8px; margin-bottom: 10px;" rows="2"></textarea>
+                                    <button onclick="submitCitizenFeedback('${found.id}')" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; width: 100%;">Submit Feedback</button>
+                                </div>
+                            `;
+                        }
+
                         resDiv.innerHTML = `
-                            <p style="color: var(--primary-accent); font-weight: bold; font-size: 1.1rem; margin-bottom: 0.5rem;">${found.subject}</p>
+                            <p style="color: var(--primary-accent); font-weight: bold; font-size: 1.1rem; margin-bottom: 0.2rem;">${found.subject}</p>
+                            <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 0.8rem;">Category: <b>${found.category}</b> | Priority: <b>${found.priority}</b></p>
                             <p style="font-size: 0.95rem;">Status: <span class="status-badge status-${found.status}" style="margin-left: 10px;">${found.status.toUpperCase()}</span></p>
-                            <div style="margin-top: 1rem; height: 4px; background: #e2e8f0; border-radius: 2px;">
-                                <div style="width: ${found.status === 'resolved' ? '100%' : '50%'}; height: 100%; background: var(--primary-accent); border-radius: 2px;"></div>
-                            </div>
-                            <p style="font-size: 0.8rem; color: var(--text-light); margin-top: 0.5rem;">Estimated Completion: ${found.date}</p>
+                            ${stepperHtml}
+                            ${feedbackHtml}
+                            <p style="font-size: 0.8rem; color: var(--text-light); margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">Reported Date: ${found.date}</p>
                          `;
                     } else {
                         resDiv.innerHTML = `<p style="color: #ef4444; font-weight: 600;">System Error: Complaint ID not found.</p>`;

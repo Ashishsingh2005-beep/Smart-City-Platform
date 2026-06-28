@@ -100,6 +100,33 @@
                         <p style="color: #991b1b;">Critical / High</p>
                     </div>
                 </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="color: #c084fc; background: rgba(168, 85, 247, 0.1);">
+                        <i class="fa-solid fa-hourglass-half"></i>
+                    </div>
+                    <div>
+                        <h3 id="statAvgResolution">0h</h3>
+                        <p style="color: var(--text-muted);">Avg Resolution</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="color: #eab308; background: rgba(234, 179, 8, 0.1);">
+                        <i class="fa-solid fa-star"></i>
+                    </div>
+                    <div>
+                        <h3 id="statSatisfaction">0%</h3>
+                        <p style="color: var(--text-muted);">Satisfaction Rate</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="color: #f43f5e; background: rgba(244, 63, 94, 0.1);">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div>
+                        <h3 id="statTopProblem" style="font-size: 1.1rem; line-height: 1.2; word-break: break-word;">None</h3>
+                        <p style="color: var(--text-muted);">Top Issue Area</p>
+                    </div>
+                </div>
 
                 <!-- Server Load Chart -->
                 <div class="stat-card" style="grid-column: span 2;">
@@ -110,7 +137,7 @@
                     </div>
                     <div
                         style="background: rgba(0,0,0,0.2); height: 150px; border-radius: 8px; position: relative; overflow: hidden; border: 1px solid var(--glass-border);">
-                        <canvas id="serverLoadChart" style="width: 100%; height: 100%;"></canvas>
+                        <canvas id="serverLoadChart" style="width: 100%; height: 1000px; max-height: 100%;"></canvas>
                     </div>
                 </div>
 
@@ -126,13 +153,96 @@
                 </div>
 
                 <!-- NEW: Monthly Trends Line Chart -->
-                <div class="stat-card" style="grid-column: span 4;">
+                <div class="stat-card" style="grid-column: span 2;">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <h4 style="color: var(--text-muted); font-size: 0.9rem;">Monthly Complaint Trends</h4>
                     </div>
-                    <div style="height: 250px;">
+                    <div style="height: 200px;">
                         <canvas id="trendsChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Daily Complaint Trends (Bar Chart) -->
+                <div class="stat-card" style="grid-column: span 2;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="color: var(--text-muted); font-size: 0.9rem;">Daily Complaint Trends</h4>
+                    </div>
+                    <div style="height: 200px;">
+                        <canvas id="dailyTrendsChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Interactive Heat Map -->
+                <div class="stat-card" style="grid-column: span 4;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="color: var(--text-muted); font-size: 0.9rem;">City Incident Density Heat Map Overlay</h4>
+                    </div>
+                    <div id="adminHeatMap" style="height: 250px; width: 100%; border-radius: 8px; border: 1px solid var(--glass-border);"></div>
+                </div>
+            </div>
+
+            <!-- Rankings Section -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 2rem;">
+                <!-- Ward Rankings -->
+                <div class="recent-complaints" style="margin-bottom: 0;">
+                    <h3><i class="fa-solid fa-trophy" style="color: #fbbf24; margin-right: 6px;"></i> Ward Performance Ranking</h3>
+                    <div class="table-responsive" style="max-height: 250px; overflow-y: auto; margin-top: 10px;">
+                        <table style="font-size: 0.9rem;">
+                            <thead>
+                                <tr>
+                                    <th>Ward</th>
+                                    <th>Total</th>
+                                    <th>Resolved</th>
+                                    <th>SLA Score</th>
+                                </tr>
+                            </thead>
+                            <tbody id="wardRankingBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Department Rankings -->
+                <div class="recent-complaints" style="margin-bottom: 0;">
+                    <h3><i class="fa-solid fa-building-user" style="color: var(--primary-accent); margin-right: 6px;"></i> Department rankings</h3>
+                    <div class="table-responsive" style="max-height: 250px; overflow-y: auto; margin-top: 10px;">
+                        <table style="font-size: 0.9rem;">
+                            <thead>
+                                <tr>
+                                    <th>Department</th>
+                                    <th>Total</th>
+                                    <th>Res. Rate</th>
+                                    <th>Avg. SLA</th>
+                                </tr>
+                            </thead>
+                            <tbody id="deptRankingBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Officer Performance Rankings -->
+                <div class="recent-complaints" style="margin-bottom: 0;">
+                    <h3><i class="fa-solid fa-star" style="color: #eab308; margin-right: 6px;"></i> Officer Leaderboard</h3>
+                    <div class="table-responsive" style="max-height: 250px; overflow-y: auto; margin-top: 10px;">
+                        <table style="font-size: 0.9rem;">
+                            <thead>
+                                <tr>
+                                    <th>Officer</th>
+                                    <th>Resolved</th>
+                                    <th>Avg Rating</th>
+                                    <th>Breaches</th>
+                                </tr>
+                            </thead>
+                            <tbody id="officerRankingBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -333,12 +443,26 @@
         document.addEventListener('DOMContentLoaded', () => {
             // Check Auth
             const user = App.store.getCurrentUser();
-            if (!user || user.role !== 'admin') {
-                alert('Access Denied. Admins only.');
+            if (!user || (user.role !== 'admin' && user.role !== 'dept' && user.role !== 'commissioner')) {
+                alert('Access Denied. Authorized access only.');
                 window.location.href = 'login.html';
                 return;
             }
             document.getElementById('adminName').innerText = user.name;
+
+            // Set role label badge
+            const badge = document.querySelector('.logo .status-badge');
+            if (badge) {
+                if (user.role === 'dept') {
+                    badge.innerText = (user.dept || 'Department').toUpperCase() + " HEAD";
+                    badge.style.background = '#10b981';
+                } else if (user.role === 'commissioner') {
+                    badge.innerText = "COMMISSIONER";
+                    badge.style.background = '#a855f7';
+                } else {
+                    badge.innerText = "ADMIN";
+                }
+            }
 
             const render = () => {
                 const filterText = document.getElementById('searchInput').value.toLowerCase();
@@ -357,6 +481,11 @@
                 }
                 if (filterCat) filtered = filtered.filter(c => c.category === filterCat);
                 if (filterPrio) filtered = filtered.filter(c => c.priority === filterPrio);
+
+                // Department Head Filter
+                if (user && user.role === 'dept' && user.dept) {
+                    filtered = filtered.filter(c => c.category === user.dept);
+                }
 
                 // Custom Render for Admin (SLA Support)
                 const tbody = document.getElementById('adminComplaintsBody');
@@ -411,6 +540,21 @@
                 document.getElementById('statResolved').innerText = stats.resolved;
                 document.getElementById('statOpen').innerText = stats.open;
                 document.getElementById('statPriority').innerText = stats.highPriority;
+                
+                if (document.getElementById('statAvgResolution')) {
+                    document.getElementById('statAvgResolution').innerText = App.complaints.getAvgResolutionTime();
+                }
+                if (document.getElementById('statSatisfaction')) {
+                    document.getElementById('statSatisfaction').innerText = App.complaints.getCitizenSatisfaction();
+                }
+                if (document.getElementById('statTopProblem')) {
+                    document.getElementById('statTopProblem').innerText = App.complaints.getTopProblemArea();
+                }
+                
+                // Render Rankings
+                if (typeof renderRankings === 'function') {
+                    renderRankings();
+                }
 
                 // Render Logs
                 const logs = App.store.getLogs();
@@ -517,6 +661,10 @@
                         typeof loadBlockchain === 'function' ? loadBlockchain() : Promise.resolve()
                     ]);
                     render();
+                    if (typeof initTrendsChart === 'function') initTrendsChart();
+                    if (typeof initAnalytics === 'function') initAnalytics();
+                    if (typeof initDailyTrendsChart === 'function') initDailyTrendsChart();
+                    if (typeof initHeatMap === 'function') initHeatMap();
                 } catch (e) {
                     console.error("Refresh error:", e);
                 }
@@ -619,6 +767,149 @@
             // Call Analytics Init
             if (document.getElementById('analyticsChart')) initAnalytics();
 
+            // Daily Trends Chart
+            const initDailyTrendsChart = () => {
+                const daily = App.complaints.getDailyTrends();
+                const canvas = document.getElementById('dailyTrendsChart');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                if (window.dailyTrendsChartInstance) {
+                    window.dailyTrendsChartInstance.destroy();
+                }
+                window.dailyTrendsChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(daily),
+                        datasets: [{
+                            label: 'Complaints by Day',
+                            data: Object.values(daily),
+                            backgroundColor: 'rgba(6, 182, 212, 0.6)',
+                            borderColor: '#06b6d4',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#cbd5e1' } },
+                            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#cbd5e1' } }
+                        }
+                    }
+                });
+            };
+            if (document.getElementById('dailyTrendsChart')) initDailyTrendsChart();
+
+            // Heatmap Init
+            const initHeatMap = () => {
+                const mapContainer = document.getElementById('adminHeatMap');
+                if (!mapContainer) return;
+                
+                if (window.adminHeatMapInstance) {
+                    window.adminHeatMapInstance.remove();
+                }
+
+                const map = L.map('adminHeatMap', {
+                    zoomControl: true,
+                    attributionControl: false
+                }).setView([28.6139, 77.2090], 11);
+                window.adminHeatMapInstance = map;
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap'
+                }).addTo(map);
+
+                const complaints = App.complaints.getAll();
+                let addedCount = 0;
+                complaints.forEach(c => {
+                    if (c.latitude && c.longitude) {
+                        let color = '#ef4444';
+                        if (['resolved', 'completed', 'feedback_submitted'].includes(c.status)) {
+                            color = '#10b981';
+                        } else if (['open', 'assigned', 'work_started', 'accepted'].includes(c.status)) {
+                            color = '#f59e0b';
+                        }
+                        
+                        L.circle([c.latitude, c.longitude], {
+                            color: color,
+                            fillColor: color,
+                            fillOpacity: 0.4,
+                            radius: c.priority === 'Emergency' ? 500 : 250
+                        }).addTo(map)
+                        .bindPopup(`<b>${c.category}</b><br>${c.subject}<br>Status: ${c.status}`);
+                        addedCount++;
+                    }
+                });
+                
+                // If no complaints have coordinates, set default markers for demonstration
+                if (addedCount === 0) {
+                    const mockLocations = [
+                        { lat: 28.6139, lng: 77.2090, cat: 'Garbage & Sanitation', sub: 'Piles of waste in block A', status: 'pending', priority: 'High' },
+                        { lat: 28.6250, lng: 77.2150, cat: 'Electricity', sub: 'Street lights flickering', status: 'open', priority: 'Medium' },
+                        { lat: 28.6050, lng: 77.2000, cat: 'Water Supply', sub: 'Pipeline leakage', status: 'resolved', priority: 'High' }
+                    ];
+                    mockLocations.forEach(m => {
+                        let color = m.status === 'resolved' ? '#10b981' : (m.status === 'open' ? '#f59e0b' : '#ef4444');
+                        L.circle([m.lat, m.lng], {
+                            color: color,
+                            fillColor: color,
+                            fillOpacity: 0.4,
+                            radius: 300
+                        }).addTo(map)
+                        .bindPopup(`<b>${m.cat}</b><br>${m.sub}<br>Status: ${m.status}`);
+                    });
+                }
+            };
+            if (document.getElementById('adminHeatMap')) initHeatMap();
+
+            // Rankings Renderer
+            const renderRankings = () => {
+                // Ward Ranking
+                const wardRanking = App.complaints.getWardRanking();
+                const wardBody = document.getElementById('wardRankingBody');
+                if (wardBody) {
+                    wardBody.innerHTML = wardRanking.map((w, idx) => `
+                        <tr>
+                            <td><b>#${idx + 1}</b> ${w.ward}</td>
+                            <td>${w.total}</td>
+                            <td>${w.resolved}</td>
+                            <td><span style="color: ${w.score >= 80 ? '#10b981' : (w.score >= 50 ? '#f59e0b' : '#ef4444')}; font-weight: bold;">${w.score}%</span></td>
+                        </tr>
+                    `).join('') || '<tr><td colspan="4" style="text-align:center;">No data available</td></tr>';
+                }
+
+                // Dept Ranking
+                const deptRanking = App.complaints.getDeptRanking();
+                const deptBody = document.getElementById('deptRankingBody');
+                if (deptBody) {
+                    deptBody.innerHTML = deptRanking.map((d, idx) => `
+                        <tr>
+                            <td><b>#${idx + 1}</b> ${d.dept}</td>
+                            <td>${d.total}</td>
+                            <td>${d.rate}</td>
+                            <td><span style="color: #06b6d4; font-weight: bold;">High</span></td>
+                        </tr>
+                    `).join('') || '<tr><td colspan="4" style="text-align:center;">No data available</td></tr>';
+                }
+
+                // Officer Ranking
+                const offRanking = App.complaints.getOfficerRanking();
+                const offBody = document.getElementById('officerRankingBody');
+                if (offBody) {
+                    offBody.innerHTML = offRanking.map((o, idx) => `
+                        <tr>
+                            <td><b>#${idx + 1}</b> ${o.name}</td>
+                            <td>${o.resolved}</td>
+                            <td><span style="color: #eab308; font-weight: bold;"><i class="fa-solid fa-star"></i> ${o.rating}</span></td>
+                            <td><span style="color: ${o.breaches > 0 ? '#ef4444' : '#cbd5e1'}; font-weight: bold;">${o.breaches}</span></td>
+                        </tr>
+                    `).join('') || '<tr><td colspan="4" style="text-align:center;">No data available</td></tr>';
+                }
+            };
+
             // Search
             document.getElementById('searchBtn').addEventListener('click', () => {
                 const text = document.getElementById('searchInput').value;
@@ -706,8 +997,83 @@
                         <b style="color:var(--text-muted)">Evidence:</b><br>
                         <img src="${c.image}" style="max-width: 100%; margin-top: 10px; border-radius: 8px; border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow);">
                     </div>` : ''}
+                    
+                    ${c.beforePhoto || c.afterPhoto ? `
+                    <div style="margin-top: 15px;">
+                        <b style="color:var(--text-muted)">Resolution Verification Proofs:</b><br>
+                        <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+                            ${c.beforePhoto ? `
+                            <div style="flex:1; min-width:120px;">
+                                <span style="font-size:0.75rem; color:var(--text-muted)">Before Photo:</span>
+                                <img src="${c.beforePhoto}" style="width:100%; border-radius:6px; border:1px solid var(--glass-border);">
+                            </div>
+                            ` : ''}
+                            ${c.afterPhoto ? `
+                            <div style="flex:1; min-width:120px;">
+                                <span style="font-size:0.75rem; color:var(--text-muted)">After Photo:</span>
+                                <img src="${c.afterPhoto}" style="width:100%; border-radius:6px; border:1px solid var(--glass-border);">
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>` : ''}
+                    ${c.completionRemarks ? `
+                    <div style="margin-top: 10px; background: rgba(16,185,129,0.05); padding: 10px; border-radius: 6px; border: 1px solid rgba(16,185,129,0.1);">
+                        <b style="color:var(--success)">Officer Completion Remarks:</b>
+                        <p style="margin: 5px 0 0 0; font-size:0.9rem;">${c.completionRemarks}</p>
+                    </div>` : ''}
+
+                    <hr style="border-color: var(--glass-border); margin: 20px 0;">
+                    <div style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; border: 1px solid var(--glass-border);">
+                        <h4 style="color: var(--primary-accent); margin-bottom: 12px; display:flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-user-shield"></i> Department & Admin Actions
+                        </h4>
+                        
+                        <!-- Transfer Department & Assign Officer -->
+                        <div style="margin-bottom: 15px;">
+                            <label style="font-size: 0.8rem; color: var(--text-muted); display:block; margin-bottom:5px;">Transfer Category & Assign Officer</label>
+                            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                                <select id="adminTransferCategory" onchange="window.adminUpdateOfficerDropdown()" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.3); color:white;">
+                                    <option value="Roads & Traffic" ${c.category === 'Roads & Traffic' ? 'selected' : ''}>Roads & Traffic</option>
+                                    <option value="Garbage & Sanitation" ${c.category === 'Garbage & Sanitation' ? 'selected' : ''}>Garbage & Sanitation</option>
+                                    <option value="Water Supply" ${c.category === 'Water Supply' ? 'selected' : ''}>Water Supply</option>
+                                    <option value="Electricity" ${c.category === 'Electricity' ? 'selected' : ''}>Electricity</option>
+                                    <option value="Other" ${c.category === 'Other' ? 'selected' : ''}>Other</option>
+                                </select>
+                                <select id="adminAssignOfficer" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.3); color:white;">
+                                    <!-- Populated in JS -->
+                                </select>
+                                <button onclick="window.adminAssignTransfer('${c.id}')" class="btn btn-primary" style="padding: 8px 15px; font-size: 0.85rem;">Transfer & Assign</button>
+                            </div>
+                        </div>
+
+                        <!-- Change Priority -->
+                        <div style="margin-bottom: 15px;">
+                            <label style="font-size: 0.8rem; color: var(--text-muted); display:block; margin-bottom:5px;">Change Priority Level</label>
+                            <div style="display:flex; gap:10px;">
+                                <select id="adminChangePriority" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.3); color:white;">
+                                    <option value="Low" ${c.priority === 'Low' ? 'selected' : ''}>Low</option>
+                                    <option value="Medium" ${c.priority === 'Medium' ? 'selected' : ''}>Medium</option>
+                                    <option value="High" ${c.priority === 'High' ? 'selected' : ''}>High</option>
+                                    <option value="Emergency" ${c.priority === 'Emergency' ? 'selected' : ''}>Emergency</option>
+                                </select>
+                                <button onclick="window.adminChangePriorityBtn('${c.id}')" class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.85rem; border-color:var(--primary-accent); color:var(--primary-accent);">Update Priority</button>
+                            </div>
+                        </div>
+
+                        <!-- Duplicate Resolution (Reject / Merge) -->
+                        <div>
+                            <label style="font-size: 0.8rem; color: var(--text-muted); display:block; margin-bottom:5px;">Duplicate & Merge management</label>
+                            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+                                <button onclick="window.adminRejectDuplicateBtn('${c.id}')" class="btn btn-secondary" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 15px; font-size: 0.85rem;">Reject Duplicate</button>
+                                <span style="color:var(--text-muted); font-size:0.85rem;">OR</span>
+                                <input type="text" id="adminMergeParentId" placeholder="Parent ID (e.g. SC202600001)" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.3); color:white; margin-bottom:0;">
+                                <button onclick="window.adminMergeBtn('${c.id}')" class="btn btn-primary" style="padding: 8px 15px; font-size: 0.85rem;">Merge Into Parent</button>
+                            </div>
+                        </div>
+                    </div>
                 `;
                 document.getElementById('viewModal').classList.add('active');
+                window.adminUpdateOfficerDropdown();
 
                 // Initialize Leaflet Map after modal is visible
                 if (c.latitude && c.longitude) {
@@ -731,6 +1097,97 @@
                             .bindPopup(`<b>${c.category}</b><br>${c.subject}`)
                             .openPopup();
                     }, 300);
+                }
+            };
+
+            window.adminUpdateOfficerDropdown = () => {
+                const catEl = document.getElementById('adminTransferCategory');
+                if (!catEl) return;
+                const cat = catEl.value;
+                const select = document.getElementById('adminAssignOfficer');
+                if (!select) return;
+                select.innerHTML = '';
+                
+                // Map categories to department keywords
+                const deptKeywordMap = {
+                    'Roads & Traffic': 'Roads',
+                    'Garbage & Sanitation': 'Sanitation',
+                    'Water Supply': 'Water',
+                    'Electricity': 'Electricity',
+                    'Other': 'Other'
+                };
+                const keyword = deptKeywordMap[cat] || '';
+                
+                const officers = App.store.getOfficers();
+                officers.forEach(off => {
+                    const match = keyword ? off.dept.toLowerCase().includes(keyword.toLowerCase()) : true;
+                    select.innerHTML += `<option value="${off.name}" ${match ? 'selected' : ''}>${off.name} (${off.dept})</option>`;
+                });
+            };
+
+            window.adminAssignTransfer = async (id) => {
+                const officer = document.getElementById('adminAssignOfficer').value;
+                const category = document.getElementById('adminTransferCategory').value;
+                if (!officer) {
+                    alert("Please select an officer.");
+                    return;
+                }
+                
+                const success = await App.complaints.assign(id, officer);
+                if (success) {
+                    const c = App.complaints.getAll().find(x => x.id === id);
+                    if (c && c.category !== category) {
+                        await App.api.put(`/complaints/${id.replace('#', '')}/status`, {
+                            status: c.status,
+                            reply: `Transferred to department: ${category} and assigned to ${officer}`
+                        });
+                    }
+                    alert("Complaint transferred & assigned successfully.");
+                    document.getElementById('viewModal').classList.remove('active');
+                    refreshData();
+                } else {
+                    alert("Failed to assign/transfer.");
+                }
+            };
+
+            window.adminChangePriorityBtn = async (id) => {
+                const priority = document.getElementById('adminChangePriority').value;
+                const success = await App.complaints.changePriority(id, priority);
+                if (success) {
+                    alert("Priority updated successfully.");
+                    document.getElementById('viewModal').classList.remove('active');
+                    refreshData();
+                } else {
+                    alert("Failed to update priority.");
+                }
+            };
+
+            window.adminRejectDuplicateBtn = async (id) => {
+                if (confirm("Are you sure you want to reject this complaint as a duplicate?")) {
+                    const success = await App.complaints.rejectDuplicate(id);
+                    if (success) {
+                        alert("Complaint rejected as duplicate.");
+                        document.getElementById('viewModal').classList.remove('active');
+                        refreshData();
+                    } else {
+                        alert("Failed to reject.");
+                    }
+                }
+            };
+
+            window.adminMergeBtn = async (id) => {
+                const parentId = document.getElementById('adminMergeParentId').value.trim();
+                if (!parentId) {
+                    alert("Please enter a Parent ID.");
+                    return;
+                }
+                const result = await App.complaints.merge(id, parentId);
+                if (result.success) {
+                    alert("Complaints merged successfully!");
+                    document.getElementById('viewModal').classList.remove('active');
+                    refreshData();
+                } else {
+                    alert("Merge failed: " + (result.message || "Invalid Parent ID"));
                 }
             };
 

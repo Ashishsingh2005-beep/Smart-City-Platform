@@ -342,7 +342,10 @@ const ComplaintSchema = new mongoose.Schema({
     phone: String,
     created_at: { type: Date, default: Date.now },
     date: String,
-    timestamp: { type: Number, default: Date.now }
+    timestamp: { type: Number, default: Date.now },
+    slaLimit: Date,
+    isSlaBreached: { type: Boolean, default: false },
+    escalationLevel: { type: Number, default: 0 }
 });
 
 const BlockSchema = new mongoose.Schema({
@@ -425,6 +428,29 @@ async function migrateData() {
             const chain = readData(BLOCKCHAIN_FILE);
             if (chain.length > 0) await Block.insertMany(chain);
         }
+        
+        // SLA Schema migration step
+        const allComps = await Complaint.find();
+        let migratedCount = 0;
+        for (const c of allComps) {
+            if (!c.slaLimit) {
+                let slaHours = 48; // default
+                if (c.category === 'Garbage & Sanitation') slaHours = 24;
+                else if (c.category === 'Water Supply') slaHours = 12;
+                else if (c.category === 'Electricity') slaHours = 48;
+                else if (c.category === 'Roads & Traffic') slaHours = 168; // 7 days
+                
+                c.slaLimit = new Date((c.timestamp || Date.now()) + slaHours * 60 * 60 * 1000);
+                c.isSlaBreached = c.isSlaBreached || false;
+                c.escalationLevel = c.escalationLevel || 0;
+                await c.save();
+                migratedCount++;
+            }
+        }
+        if (migratedCount > 0) {
+            console.log(`✅ SLA Migration: Backfilled SLA limits for ${migratedCount} complaints.`);
+        }
+        
         console.log('✅ Data Migration Check Complete');
     } catch (err) { console.warn('Migration status:', err.message); }
 }
@@ -513,6 +539,8 @@ const seedData = async () => {
     if (userCount === 0) {
         const initialUsers = [
             { name: 'System Admin', email: 'admin@smartcity.com', password: 'admin123', role: 'admin' },
+            { name: 'Commissioner Rajesh Kumar', email: 'commissioner@smartcity.com', password: '123', role: 'commissioner' },
+            { name: 'Dept Head James', email: 'dept.roads@smartcity.com', dept: 'Roads & Traffic', password: '123', role: 'dept' },
             { name: 'Officer John Doe', email: 'officer.roads@smartcity.com', dept: 'Roads & Traffic', password: '123', role: 'officer' },
             { name: 'Officer Jane Smith', email: 'officer.waste@smartcity.com', dept: 'Garbage & Sanitation', password: '123', role: 'officer' },
             { name: 'Officer Mike Johnson', email: 'officer.water@smartcity.com', dept: 'Water Supply', password: '123', role: 'officer' },
@@ -912,6 +940,12 @@ app.post('/api/complaints', authenticateToken, async (req, res) => {
         const assignedOfficerName = officer ? officer.name : 'Unassigned';
         const totalComps = await Complaint.countDocuments();
 
+        let slaHours = 48; // default
+        if (category === 'Garbage & Sanitation') slaHours = 24;
+        else if (category === 'Water Supply') slaHours = 12;
+        else if (category === 'Electricity') slaHours = 48;
+        else if (category === 'Roads & Traffic') slaHours = 168; // 7 days
+
         const newComplaint = new Complaint({
             ...data,
             category: category,
@@ -926,6 +960,9 @@ app.post('/api/complaints', authenticateToken, async (req, res) => {
             assigned_to: assignedOfficerName,
             date: new Date().toLocaleDateString(),
             timestamp: Date.now(),
+            slaLimit: new Date(Date.now() + slaHours * 60 * 60 * 1000),
+            isSlaBreached: false,
+            escalationLevel: 0,
             history: [
                 { action: 'Created', timestamp: new Date().toISOString(), details: 'Complaint filed via Secure Portal' },
                 { action: 'AI-Analysis', timestamp: new Date().toISOString(), details: `Classified as ${category} | Priority: ${priority}` }
@@ -971,19 +1008,26 @@ app.post('/api/complaints', authenticateToken, async (req, res) => {
 
 app.put('/api/complaints/:id/status', authenticateToken, async (req, res) => {
     try {
-        const { status, reply, eta } = req.body;
-        const complaint = await Complaint.findOne({ id: req.params.id.startsWith('#') ? req.params.id : `#${req.params.id}` });
+        const queryId = req.params.id;
+        const { status, reply, eta, beforePhoto, afterPhoto } = req.body;
+        let complaint = await Complaint.findOne({ id: queryId }) || 
+                            await Complaint.findOne({ complaint_id: queryId }) ||
+                            await Complaint.findOne({ id: queryId.startsWith('#') ? queryId : `#${queryId}` }) ||
+                            await Complaint.findOne({ id: queryId.replace('#', '') });
 
         if (complaint) {
             const oldStatus = complaint.status;
             complaint.status = status;
             if (reply) complaint.adminReply = reply;
             if (eta) complaint.eta = eta;
+            if (beforePhoto) complaint.beforePhoto = beforePhoto;
+            if (afterPhoto) complaint.afterPhoto = afterPhoto;
+            if (reply && status === 'resolved') complaint.completionRemarks = reply;
 
             complaint.history.push({
                 action: 'Status Update',
                 timestamp: new Date().toISOString(),
-                details: `Status changed to ${status}. ${reply ? 'Reply: ' + reply : ''}`,
+                details: `Status changed to ${status}. ${reply ? 'Remarks: ' + reply : ''}`,
                 by: req.user.name
             });
 
@@ -1015,7 +1059,11 @@ app.put('/api/complaints/:id/status', authenticateToken, async (req, res) => {
 app.put('/api/complaints/:id/assign', authenticateToken, async (req, res) => {
     try {
         const { officer } = req.body;
-        const complaint = await Complaint.findOne({ id: req.params.id.startsWith('#') ? req.params.id : `#${req.params.id}` });
+        const queryId = req.params.id;
+        let complaint = await Complaint.findOne({ id: queryId }) || 
+                            await Complaint.findOne({ complaint_id: queryId }) ||
+                            await Complaint.findOne({ id: queryId.startsWith('#') ? queryId : `#${queryId}` }) ||
+                            await Complaint.findOne({ id: queryId.replace('#', '') });
 
         if (complaint) {
             complaint.assigned_to = officer;
@@ -1047,15 +1095,332 @@ app.put('/api/complaints/:id/assign', authenticateToken, async (req, res) => {
 
 app.delete('/api/complaints/:id', authenticateToken, async (req, res) => {
     try {
-        const result = await Complaint.deleteOne({ id: req.params.id.startsWith('#') ? req.params.id : `#${req.params.id}` });
-        if (result.deletedCount > 0) res.json({ success: true });
-        else res.status(404).json({ success: false, message: 'Complaint not found' });
+        const queryId = req.params.id;
+        let complaint = await Complaint.findOne({ id: queryId }) || 
+                            await Complaint.findOne({ complaint_id: queryId }) ||
+                            await Complaint.findOne({ id: queryId.startsWith('#') ? queryId : `#${queryId}` }) ||
+                            await Complaint.findOne({ id: queryId.replace('#', '') });
+
+        if (complaint) {
+            const result = await Complaint.deleteOne({ id: complaint.id });
+            if (result.deletedCount > 0) res.json({ success: true });
+            else res.status(404).json({ success: false, message: 'Complaint not found' });
+        } else {
+            res.status(404).json({ success: false, message: 'Complaint not found' });
+        }
     } catch (e) {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
 
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+app.post('/api/complaints/:id/feedback', authenticateToken, async (req, res) => {
+    try {
+        const queryId = req.params.id;
+        const { rating, text } = req.body;
+        let complaint = await Complaint.findOne({ id: queryId }) || 
+                            await Complaint.findOne({ complaint_id: queryId }) ||
+                            await Complaint.findOne({ id: queryId.startsWith('#') ? queryId : `#${queryId}` }) ||
+                            await Complaint.findOne({ id: queryId.replace('#', '') });
+
+        if (complaint) {
+            complaint.status = 'feedback_submitted';
+            complaint.feedback = { rating: Number(rating), text, timestamp: new Date().toISOString() };
+            complaint.history.push({
+                action: 'Feedback Submitted',
+                timestamp: new Date().toISOString(),
+                details: `Citizen rated ${rating}/5 Stars. Comments: "${text}"`
+            });
+            await complaint.save();
+
+            // Blockchain Record
+            await smartCityChain.addBlock({
+                action: "FEEDBACK_SUBMITTED",
+                complaintId: complaint.id,
+                rating: Number(rating),
+                by: req.user.email
+            });
+
+            res.json({ success: true });
+        } else {
+            res.status(404).json({ success: false, message: 'Complaint not found' });
+        }
+    } catch (e) {
+        res.status(500).json({ success: false, message: 'Server error: ' + e.message });
+    }
+});
+
+app.post('/api/complaints/:id/vote', authenticateToken, async (req, res) => {
+    try {
+        const queryId = req.params.id;
+        let comp = await Complaint.findOne({ id: queryId }) || 
+                         await Complaint.findOne({ complaint_id: queryId }) ||
+                         await Complaint.findOne({ id: queryId.replace('#', '') });
+        
+        if (!comp) return res.status(404).json({ success: false, message: 'Complaint not found' });
+        
+        if (!comp.votedUsers) comp.votedUsers = [];
+        if (comp.votedUsers.includes(req.user.email)) {
+            return res.json({ success: false, message: 'You have already supported this complaint.' });
+        }
+        
+        comp.votes = (comp.votes || 0) + 1;
+        comp.votedUsers.push(req.user.email);
+        
+        if (comp.votes >= 5 && comp.priority !== 'Emergency') {
+            comp.priority = 'High';
+        }
+        
+        comp.history.push({
+            action: 'Upvoted',
+            timestamp: new Date().toISOString(),
+            details: `Citizen supported this issue. Total votes: ${comp.votes}`
+        });
+        
+        await comp.save();
+        res.json({ success: true, votes: comp.votes });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+app.post('/api/complaints/:id/reopen', authenticateToken, async (req, res) => {
+    try {
+        const queryId = req.params.id;
+        let comp = await Complaint.findOne({ id: queryId }) || 
+                         await Complaint.findOne({ complaint_id: queryId }) ||
+                         await Complaint.findOne({ id: queryId.replace('#', '') });
+        
+        if (!comp) return res.status(404).json({ success: false, message: 'Complaint not found' });
+        
+        comp.status = 'pending';
+        comp.history.push({
+            action: 'Reopened',
+            timestamp: new Date().toISOString(),
+            details: `Citizen was unsatisfied and reopened the complaint.`
+        });
+        
+        comp.slaLimit = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours SLA to resolve reopened
+        comp.isSlaBreached = false;
+        comp.escalationLevel = 0;
+        
+        await comp.save();
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+app.put('/api/complaints/:id/priority', authenticateToken, async (req, res) => {
+    try {
+        const { priority } = req.body;
+        const queryId = req.params.id;
+        let complaint = await Complaint.findOne({ id: queryId }) || 
+                            await Complaint.findOne({ complaint_id: queryId }) ||
+                            await Complaint.findOne({ id: queryId.replace('#', '') });
+
+        if (complaint) {
+            const oldPriority = complaint.priority;
+            complaint.priority = priority;
+            
+            if (priority === 'Emergency') {
+                complaint.slaLimit = new Date(Date.now() + 2 * 60 * 60 * 1000);
+                complaint.isSlaBreached = false;
+            }
+
+            complaint.history.push({
+                action: 'Priority Updated',
+                timestamp: new Date().toISOString(),
+                details: `Priority changed from ${oldPriority} to ${priority}`,
+                by: req.user.name
+            });
+
+            await complaint.save();
+
+            await smartCityChain.addBlock({
+                action: "PRIORITY_CHANGE",
+                complaintId: complaint.id,
+                priority: priority,
+                by: req.user.email
+            });
+
+            res.json({ success: true, complaint });
+        } else {
+            res.status(404).json({ success: false, message: 'Complaint not found' });
+        }
+    } catch (e) {
+        res.status(500).json({ success: false, message: 'Server error: ' + e.message });
+    }
+});
+
+app.put('/api/complaints/:id/reject-duplicate', authenticateToken, async (req, res) => {
+    try {
+        const queryId = req.params.id;
+        let complaint = await Complaint.findOne({ id: queryId }) || 
+                            await Complaint.findOne({ complaint_id: queryId }) ||
+                            await Complaint.findOne({ id: queryId.replace('#', '') });
+
+        if (complaint) {
+            complaint.status = 'rejected';
+            complaint.isDuplicate = true;
+            complaint.history.push({
+                action: 'Rejected Duplicate',
+                timestamp: new Date().toISOString(),
+                details: `Complaint marked as duplicate and rejected.`,
+                by: req.user.name
+            });
+
+            await complaint.save();
+
+            await smartCityChain.addBlock({
+                action: "REJECTED_DUPLICATE",
+                complaintId: complaint.id,
+                by: req.user.email
+            });
+
+            res.json({ success: true, complaint });
+        } else {
+            res.status(404).json({ success: false, message: 'Complaint not found' });
+        }
+    } catch (e) {
+        res.status(500).json({ success: false, message: 'Server error: ' + e.message });
+    }
+});
+
+app.post('/api/complaints/:id/merge', authenticateToken, async (req, res) => {
+    try {
+        const queryId = req.params.id;
+        const { parentId } = req.body;
+        
+        let child = await Complaint.findOne({ id: queryId }) || 
+                          await Complaint.findOne({ complaint_id: queryId }) ||
+                          await Complaint.findOne({ id: queryId.replace('#', '') });
+
+        let parent = await Complaint.findOne({ id: parentId }) || 
+                           await Complaint.findOne({ complaint_id: parentId }) ||
+                           await Complaint.findOne({ id: parentId.replace('#', '') });
+
+        if (!child) return res.status(404).json({ success: false, message: 'Source complaint not found' });
+        if (!parent) return res.status(404).json({ success: false, message: 'Target parent complaint not found' });
+
+        const childVotes = child.votes || 0;
+        parent.votes = (parent.votes || 0) + childVotes;
+        
+        if (child.votedUsers) {
+            if (!parent.votedUsers) parent.votedUsers = [];
+            child.votedUsers.forEach(u => {
+                if (!parent.votedUsers.includes(u)) {
+                    parent.votedUsers.push(u);
+                }
+            });
+        }
+
+        child.status = 'rejected';
+        child.isDuplicate = true;
+        child.duplicateOf = parent.id;
+        
+        child.history.push({
+            action: 'Merged',
+            timestamp: new Date().toISOString(),
+            details: `Merged into parent complaint ${parent.id}. Status set to Rejected/Duplicate.`,
+            by: req.user.name
+        });
+
+        parent.history.push({
+            action: 'Votes Merged',
+            timestamp: new Date().toISOString(),
+            details: `Merged complaint ${child.id}. Added ${childVotes} votes. Total: ${parent.votes} votes.`,
+            by: req.user.name
+        });
+
+        await child.save();
+        await parent.save();
+
+        await smartCityChain.addBlock({
+            action: "MERGED_COMPLAINTS",
+            childId: child.id,
+            parentId: parent.id,
+            votesAdded: childVotes,
+            by: req.user.email
+        });
+
+        res.json({ success: true, message: 'Complaints merged successfully', child, parent });
+    } catch (e) {
+        res.status(500).json({ success: false, message: 'Server error: ' + e.message });
+    }
+});
+
+// Background SLA & Escalation Checker
+async function runSLACheck() {
+    try {
+        const now = new Date();
+        const activeComplaints = await Complaint.find({ status: { $nin: ['resolved', 'feedback_submitted', 'completed'] } });
+        
+        for (const comp of activeComplaints) {
+            if (comp.slaLimit && now > new Date(comp.slaLimit)) {
+                let breached = false;
+                if (!comp.isSlaBreached) {
+                    comp.isSlaBreached = true;
+                    breached = true;
+                    comp.history.push({
+                        action: 'SLA Breached',
+                        timestamp: now.toISOString(),
+                        details: 'SLA limit crossed. Auto-triggering Red Alert.'
+                    });
+                    
+                    try {
+                        await smartCityChain.addBlock({
+                            action: "SLA_BREACH",
+                            complaintId: comp.id,
+                            details: `SLA breached. Priority: ${comp.priority}`
+                        });
+                    } catch(err) {}
+                    
+                    console.log(`[SLA BREACH] Red Alert triggered for ${comp.id}`);
+                }
+
+                // Escalation check based on hours breached
+                const hoursPast = (now - new Date(comp.slaLimit)) / (1000 * 60 * 60);
+                let targetLevel = 0;
+                if (hoursPast > 6) targetLevel = 3; // Mayor
+                else if (hoursPast > 4) targetLevel = 2; // Commissioner
+                else if (hoursPast > 2) targetLevel = 1; // Senior Officer
+
+                if (comp.escalationLevel < targetLevel) {
+                    const oldLevel = comp.escalationLevel;
+                    comp.escalationLevel = targetLevel;
+                    const levels = ['Officer', 'Senior Officer', 'Commissioner', 'Mayor'];
+                    comp.history.push({
+                        action: 'Auto-Escalated',
+                        timestamp: now.toISOString(),
+                        details: `Escalated from ${levels[oldLevel]} to ${levels[targetLevel]} automatically.`
+                    });
+                    
+                    try {
+                        await smartCityChain.addBlock({
+                            action: "COMPLAINT_ESCALATED",
+                            complaintId: comp.id,
+                            details: `Escalated to ${levels[targetLevel]}`
+                        });
+                    } catch(err) {}
+
+                    console.log(`[ESCALATION] Complaint ${comp.id} escalated to ${levels[targetLevel]}`);
+                }
+                
+                await comp.save();
+            }
+        }
+    } catch (e) {
+        console.error("SLA check error:", e);
+    }
+}
+
+// Run SLA check periodically
+setInterval(runSLACheck, 15000);
+
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    setTimeout(runSLACheck, 2000);
+});
 
 process.on('uncaughtException', (err) => console.error('Critical Error:', err));
 setInterval(() => { }, 60000);

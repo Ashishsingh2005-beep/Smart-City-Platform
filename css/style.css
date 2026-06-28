@@ -470,15 +470,39 @@ tr:hover td {
 }
 
 .status-pending {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.status-assigned {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.status-accepted {
+    background: rgba(99, 102, 241, 0.15);
+    color: #818cf8;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.status-in_progress, .status-work_started {
     background: rgba(245, 158, 11, 0.15);
     color: #fbbf24;
     border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
-.status-resolved {
+.status-resolved, .status-completed {
     background: rgba(16, 185, 129, 0.15);
     color: #34d399;
     border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.status-feedback_submitted {
+    background: rgba(6, 182, 212, 0.15);
+    color: #22d3ee;
+    border: 1px solid rgba(6, 182, 212, 0.3);
 }
 
 .status-open {
@@ -964,4 +988,130 @@ body.dark-mode tr:hover td {
 ::selection {
     background: var(--primary-accent);
     color: #fff;
+}
+
+/* AI Holographic Scanner Styles */
+.ai-preview-container {
+    position: relative;
+    width: 100%;
+    margin-top: 10px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #090d16;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: none; /* Shown dynamically when image is loaded */
+}
+
+.ai-preview-img {
+    width: 100%;
+    max-height: 250px;
+    object-fit: contain;
+    display: block;
+    transition: filter 0.3s ease;
+}
+
+.ai-preview-img.analyzing {
+    filter: brightness(0.4) blur(1px);
+}
+
+.ai-scanner-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 15px;
+    box-sizing: border-box;
+}
+
+.ai-scanner-overlay.active {
+    display: flex;
+}
+
+/* Scanning Sweep Laser Line */
+.ai-scanner-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #06b6d4, #6366f1, #06b6d4, transparent);
+    box-shadow: 0 0 15px #06b6d4, 0 0 30px #6366f1;
+    animation: scanSweep 2s ease-in-out infinite;
+    z-index: 5;
+}
+
+@keyframes scanSweep {
+    0% { top: 0%; }
+    50% { top: 100%; }
+    100% { top: 0%; }
+}
+
+/* AI Holographic Bounding Box */
+.ai-bounding-box {
+    position: absolute;
+    border: 2px dashed #06b6d4;
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.5), inset 0 0 10px rgba(6, 182, 212, 0.2);
+    border-radius: 4px;
+    z-index: 4;
+    animation: pulseBox 1s infinite alternate;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.ai-bounding-box.active {
+    opacity: 1;
+}
+
+.ai-bounding-box-label {
+    position: absolute;
+    top: -24px;
+    left: -2px;
+    background: #06b6d4;
+    color: #000;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 3px 3px 0 0;
+    white-space: nowrap;
+    text-transform: uppercase;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+@keyframes pulseBox {
+    from { border-color: #06b6d4; box-shadow: 0 0 8px rgba(6, 182, 212, 0.4); }
+    to { border-color: #6366f1; box-shadow: 0 0 15px rgba(99, 102, 241, 0.8); }
+}
+
+/* Status Console Panel */
+.ai-status-panel {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(6, 182, 212, 0.3);
+    backdrop-filter: blur(10px);
+    border-radius: 8px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: #06b6d4;
+    max-width: 90%;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    z-index: 6;
+    margin-top: auto;
+}
+
+.ai-status-log {
+    margin: 2px 0;
+    line-height: 1.3;
+}
+
+.ai-status-log.success {
+    color: #10b981;
+}
+
+.ai-status-log.info {
+    color: #eab308;
 }

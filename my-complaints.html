@@ -79,6 +79,17 @@
         </main>
     </div>
 
+    <!-- Tracking Modal -->
+    <div class="modal" id="trackModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <i class="fa-solid fa-times close-modal"
+                onclick="document.getElementById('trackModal').classList.remove('active')"></i>
+            <h2><i class="fa-solid fa-map-marker-alt" style="color: var(--primary-accent); margin-right: 8px;"></i> Live Complaint Tracking</h2>
+            <div id="trackModalContent" style="margin-top: 15px; line-height: 1.6;">
+            </div>
+        </div>
+    </div>
+
     <script src="js/app.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
@@ -117,7 +128,12 @@
                                 <td>${c.eta || '-'}</td>
                                 <td>${historyHtml}</td>
                                 <td>${c.date}</td>
-                                <td><button onclick="downloadReceipt('${c.id}')" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;"><i class="fa-solid fa-download"></i> Receipt</button></td>
+                                <td>
+                                    <div style="display: flex; gap: 5px;">
+                                        <button onclick="trackComplaint('${c.id}')" class="btn btn-primary" style="padding: 4px 10px; font-size: 0.75rem; background: var(--primary-accent);"><i class="fa-solid fa-location-dot"></i> Track</button>
+                                        <button onclick="downloadReceipt('${c.id}')" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;"><i class="fa-solid fa-download"></i> Receipt</button>
+                                    </div>
+                                </td>
                             </tr>
                         `;
                     tbody.innerHTML += row;
@@ -198,6 +214,143 @@
             
             html2pdf().set(opt).from(receiptDiv).save();
         }
+
+        let selectedRating = 5;
+        window.setFeedbackRating = (rating) => {
+            selectedRating = rating;
+            for (let i = 1; i <= 5; i++) {
+                const star = document.getElementById('star' + i);
+                if (star) {
+                    if (i <= rating) {
+                        star.className = 'fa-star fa-solid';
+                    } else {
+                        star.className = 'fa-star fa-regular';
+                    }
+                }
+            }
+        };
+
+        window.submitCitizenFeedback = async (complaintId) => {
+            const feedbackText = document.getElementById('feedbackText').value;
+            const success = await App.complaints.submitFeedback(complaintId, selectedRating, feedbackText);
+            if (success) {
+                alert("Feedback submitted successfully!");
+                document.getElementById('trackModal').classList.remove('active');
+                // Refresh list
+                location.reload();
+            } else {
+                alert("Failed to submit feedback.");
+            }
+        };
+
+        window.trackComplaint = (id) => {
+            const complaints = App.store.getComplaints();
+            const found = complaints.find(c => c.id === id);
+            if (!found) return;
+
+            let currentIdx = 0;
+            if (found.status === 'pending') currentIdx = 0;
+            else if (found.status === 'assigned' || found.status === 'open') currentIdx = 1;
+            else if (found.status === 'accepted') currentIdx = 2;
+            else if (found.status === 'in_progress' || found.status === 'work_started') currentIdx = 3;
+            else if (found.status === 'resolved' || found.status === 'completed') currentIdx = 4;
+            else if (found.status === 'feedback_submitted') currentIdx = 5;
+
+            const stages = [
+                { label: "Submitted", detail: "Complaint logged securely" },
+                { label: "Assigned", detail: found.assigned_to && found.assigned_to !== 'Unassigned' ? `Assigned to ${found.assigned_to}` : "Pending assignment" },
+                { label: "Accepted", detail: found.status === 'pending' || found.status === 'open' ? "Awaiting acceptance" : "Task accepted by department" },
+                { label: "Work Started", detail: (found.status === 'in_progress' || found.status === 'resolved' || found.status === 'feedback_submitted') ? "Work order executed on-site" : "Pending work start" },
+                { label: "Completed", detail: found.adminReply ? `Resolved: ${found.adminReply}` : ((found.status === 'resolved' || found.status === 'feedback_submitted') ? "Marked as resolved" : "Pending completion") },
+                { label: "Citizen Feedback", detail: found.feedback ? `Rating: ${found.feedback.rating}/5 | "${found.feedback.text}"` : "Awaiting citizen feedback" }
+            ];
+
+            let stepperHtml = `<div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 15px; border-left: 2px solid rgba(255,255,255,0.1); padding-left: 20px; position: relative; text-align: left;">`;
+            stages.forEach((stage, idx) => {
+                const isActive = idx <= currentIdx;
+                const color = isActive ? '#06b6d4' : 'rgba(255,255,255,0.2)';
+                const dotBg = isActive ? '#06b6d4' : '#1e293b';
+                const textColor = isActive ? '#fff' : 'rgba(255,255,255,0.4)';
+                const pulse = idx === currentIdx && found.status !== 'resolved' && found.status !== 'feedback_submitted' ? 'animation: pulse 1.5s infinite;' : '';
+
+                stepperHtml += `
+                    <div style="position: relative; margin-bottom: 5px;">
+                        <div style="position: absolute; left: -26px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: ${dotBg}; border: 2px solid ${color}; ${pulse}"></div>
+                        <div style="font-weight: 600; color: ${color}; font-size: 0.9rem;">${stage.label}</div>
+                        <div style="font-size: 0.8rem; color: ${textColor}; margin-top: 2px;">${stage.detail}</div>
+                    </div>
+                `;
+            });
+            stepperHtml += `</div>`;
+
+            let feedbackHtml = '';
+            if (found.status === 'resolved' || found.status === 'completed') {
+                feedbackHtml = `
+                    <div id="feedbackFormSection" style="margin-top: 1.5rem; padding: 15px; border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 12px; background: rgba(6, 182, 212, 0.05); text-align: left;">
+                        <h4 style="font-size: 0.95rem; margin-bottom: 10px; color: #06b6d4;">Resolution Satisfaction Feedback</h4>
+                        <div style="display: flex; gap: 15px; margin-bottom: 12px;">
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: white;">
+                                <input type="radio" name="satisfaction" value="yes" checked onclick="toggleSatisfactionUI('yes')" style="accent-color: #10b981;"> Satisfied
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: white;">
+                                <input type="radio" name="satisfaction" value="no" onclick="toggleSatisfactionUI('no')" style="accent-color: #ef4444;"> Not Satisfied
+                            </label>
+                        </div>
+                        <div id="satisfiedFeedbackFields">
+                            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                                <span style="font-size: 0.85rem; color: var(--text-light);">Rating:</span>
+                                <div style="display: flex; gap: 5px; color: #fbbf24; cursor: pointer;">
+                                    <i class="fa-star fa-solid" onclick="setFeedbackRating(1)" id="star1"></i>
+                                    <i class="fa-star fa-solid" onclick="setFeedbackRating(2)" id="star2"></i>
+                                    <i class="fa-star fa-solid" onclick="setFeedbackRating(3)" id="star3"></i>
+                                    <i class="fa-star fa-solid" onclick="setFeedbackRating(4)" id="star4"></i>
+                                    <i class="fa-star fa-solid" onclick="setFeedbackRating(5)" id="star5"></i>
+                                </div>
+                            </div>
+                            <textarea id="feedbackText" placeholder="Add your feedback comments here..." style="width: 100%; font-size: 0.85rem; background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff; padding: 8px; margin-bottom: 10px;" rows="2"></textarea>
+                            <button onclick="submitCitizenFeedback('${found.id}')" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; width: 100%;">Submit Feedback</button>
+                        </div>
+                        <div id="unsatisfiedFeedbackFields" style="display: none;">
+                            <p style="color: #ef4444; font-size: 0.8rem; margin-bottom: 10px;">If you are unsatisfied with the resolution, you can reopen this complaint to trigger reassignment.</p>
+                            <button onclick="reopenComplaint('${found.id}')" class="btn btn-primary" style="background: #ef4444; border: none; padding: 8px 12px; font-size: 0.8rem; border-radius: 8px; width: 100%; font-weight: bold;">
+                                <i class="fa-solid fa-arrows-rotate"></i> Reopen Complaint
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+ 
+            const content = document.getElementById('trackModalContent');
+            content.innerHTML = `
+                <p style="color: var(--primary-accent); font-weight: bold; font-size: 1.1rem; margin-bottom: 0.2rem;">${found.subject}</p>
+                <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 0.8rem;">Category: <b>${found.category}</b> | Priority: <b>${found.priority}</b></p>
+                <p style="font-size: 0.95rem;">Status: <span class="status-badge status-${found.status}">${found.status.toUpperCase()}</span></p>
+                ${stepperHtml}
+                ${feedbackHtml}
+                <p style="font-size: 0.8rem; color: var(--text-light); margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">Reported Date: ${found.date}</p>
+            `;
+            document.getElementById('trackModal').classList.add('active');
+        };
+
+        window.toggleSatisfactionUI = (val) => {
+            const sat = document.getElementById('satisfiedFeedbackFields');
+            const unsat = document.getElementById('unsatisfiedFeedbackFields');
+            if (sat) sat.style.display = val === 'yes' ? 'block' : 'none';
+            if (unsat) unsat.style.display = val === 'yes' ? 'none' : 'block';
+        };
+
+        window.reopenComplaint = async (complaintId) => {
+            if (confirm("Are you sure you want to reopen this complaint?")) {
+                const res = await App.api.post(`/complaints/${complaintId}/reopen`, {});
+                if (res && res.success) {
+                    alert("Complaint reopened successfully!");
+                    document.getElementById('trackModal').classList.remove('active');
+                    location.reload();
+                } else {
+                    alert(res ? res.message : "Failed to reopen complaint.");
+                }
+            }
+        };
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </body>

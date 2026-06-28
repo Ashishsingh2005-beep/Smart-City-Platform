@@ -39,6 +39,21 @@
                         <label>Password</label>
                         <input type="password" id="password" placeholder="Create a strong password" required>
                     </div>
+                    <div class="form-group">
+                        <label>Aadhaar Number (Optional)</label>
+                        <input type="text" id="aadhaar" placeholder="12-digit Aadhaar Number" maxlength="12">
+                    </div>
+                    <!-- CAPTCHA Section -->
+                    <div class="form-group" style="background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; margin-top: 15px;">
+                        <label style="display:flex; justify-content:space-between; align-items:center;">
+                            <span>Security CAPTCHA Verification</span>
+                            <span onclick="regenerateCaptcha()" style="color: var(--primary-accent); cursor: pointer; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-arrows-rotate"></i> Refresh</span>
+                        </label>
+                        <div style="display:flex; align-items:center; gap:15px; margin-top: 8px;">
+                            <div id="captchaQuestion" style="background: linear-gradient(135deg, rgba(6,182,212,0.1), rgba(99,102,241,0.1)); padding: 10px 20px; border-radius: 8px; font-weight: bold; color: var(--primary-accent); font-family: monospace; font-size: 1.2rem; border: 1px solid rgba(6,182,212,0.2); letter-spacing: 2px;">5 + 3 = ?</div>
+                            <input type="text" id="captchaAnswer" placeholder="Answer" required style="flex:1; margin: 0; padding: 10px; text-align: center; font-size: 1.1rem; font-weight: bold;">
+                        </div>
+                    </div>
                     <button type="submit" class="btn btn-primary btn-block">Verify Email & Continue</button>
                 </div>
 
@@ -90,7 +105,7 @@
         <div class="modal-content"
             style="text-align: center; max-width: 480px; padding: 2.5rem; border-radius: 30px; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 50px rgba(6, 182, 212, 0.2);">
             <div id="faceScanStage">
-                <h3 style="font-size: 1.8rem; margin-bottom: 10px; background: linear-gradient(to right, #fff, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aadhaar Digital Enrollment</h3>
+                <h3 style="font-size: 1.8rem; margin-bottom: 10px; background: linear-gradient(to right, #fff, #06b6d4); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Aadhaar Digital Enrollment</h3>
                 <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 20px;">Registering Biometric Identity with Government Node</p>
 
                 <div
@@ -140,11 +155,36 @@
     <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
     <script src="js/app.js"></script>
     <script>
+        let captchaResult = 0;
+        window.regenerateCaptcha = () => {
+            const num1 = Math.floor(Math.random() * 15) + 1;
+            const num2 = Math.floor(Math.random() * 15) + 1;
+            captchaResult = num1 + num2;
+            const qEl = document.getElementById('captchaQuestion');
+            if (qEl) qEl.innerText = `${num1} + ${num2} = ?`;
+            const aEl = document.getElementById('captchaAnswer');
+            if (aEl) aEl.value = '';
+        };
+
+        // Initialize captcha
+        setTimeout(window.regenerateCaptcha, 100);
+
         document.getElementById('signupForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const err = document.getElementById('errorMsg');
+            err.style.display = 'none';
+
+            // Verify CAPTCHA
+            const answer = parseInt(document.getElementById('captchaAnswer').value);
+            if (isNaN(answer) || answer !== captchaResult) {
+                err.innerText = "Incorrect CAPTCHA answer. Please try again.";
+                err.style.display = 'block';
+                window.regenerateCaptcha();
+                return;
+            }
+
             const emailInput = document.getElementById('email');
             const email = emailInput.value;
-            const err = document.getElementById('errorMsg');
 
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             const phoneRegex = /^\d{10}$/; // 10-digit phone number
@@ -152,6 +192,7 @@
                 err.innerText = "Incorrect format. Please enter a valid Email or 10-digit Phone Number.";
                 err.style.display = 'block';
                 emailInput.style.borderColor = 'var(--danger)';
+                window.regenerateCaptcha();
                 return;
             }
 
@@ -191,8 +232,9 @@
 
             const name = document.getElementById('name').value;
             const password = document.getElementById('password').value;
+            const aadhaar = document.getElementById('aadhaar').value;
 
-            const result = await App.auth.register(name, email, password);
+            const result = await App.auth.register(name, email, password, null, aadhaar);
             if (result.success) {
                 alert('Email Verified! Account created successfully.');
                 await App.auth.login(email, password);
@@ -221,14 +263,25 @@
             document.getElementById('faceSnapshot').style.display = 'none';
 
             try {
-                videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('NOT_SUPPORTED');
+                }
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 } });
                 video.srcObject = videoStream;
                 status.innerText = "Align your face with the scanner...";
                 captureBtn.style.display = 'block';
                 overlay.style.display = 'block';
                 scanLine.style.display = 'block';
             } catch (err) {
-                status.innerText = "Error: Camera access required for Face ID.";
+                console.error("Camera error:", err);
+                if (err.message === 'NOT_SUPPORTED' || err.name === 'TypeError') {
+                    status.innerHTML = "<span style='color:#ef4444;'>⚠️ Camera not available.</span><br><small style='color:var(--text-muted);'>Page must be opened via <b>http://localhost:3000</b> or <b>http://127.0.0.1:3000</b>.<br>File:// URLs do not support camera access.</small>";
+                    alert("Camera permission requires a secure context.\n\nPlease open the app from:\nhttp://localhost:3000/signup.html\n\nDo NOT open the HTML file directly from your file explorer.");
+                } else if (err.name === 'NotAllowedError') {
+                    status.innerHTML = "<span style='color:#ef4444;'>⚠️ Camera permission denied.</span><br><small style='color:var(--text-muted);'>Click the lock/camera icon in your browser address bar → Allow camera → Reload page.</small>";
+                } else {
+                    status.innerText = "Error: Camera access required for Face ID. (" + err.message + ")";
+                }
             }
         };
 
@@ -280,7 +333,8 @@
             status.innerHTML = "<i class='fa-solid fa-shield-halved fa-spin' style='color: #06b6d4'></i> Securing biometric signature into Digital Vault...";
 
             const faceDataJSON = JSON.stringify(embeddings);
-            const result = await App.auth.register(name, email, password, faceDataJSON);
+            const aadhaar = document.getElementById('aadhaar').value;
+            const result = await App.auth.register(name, email, password, faceDataJSON, aadhaar);
             if (result.success) {
                 hudStatus.innerText = "ENROLLED";
                 hudStatus.style.color = "#10b981";
