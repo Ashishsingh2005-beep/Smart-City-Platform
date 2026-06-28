@@ -9,40 +9,77 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
     <style>
+        @keyframes borderGlow {
+            0% { border-color: var(--primary); box-shadow: 0 10px 30px rgba(99, 102, 241, 0.2); }
+            50% { border-color: var(--primary-accent); box-shadow: 0 10px 40px rgba(6, 182, 212, 0.4); }
+            100% { border-color: var(--primary); box-shadow: 0 10px 30px rgba(99, 102, 241, 0.2); }
+        }
         .portal-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 30px 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 35px 25px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             display: flex;
             flex-direction: column;
             align-items: center;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            position: relative;
         }
         .portal-card:hover {
-            transform: translateY(-10px);
+            transform: translateY(-12px) scale(1.03);
             background: rgba(255, 255, 255, 0.05);
-            border-color: var(--primary-accent);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: borderGlow 3s infinite;
         }
         .portal-icon {
             width: 80px;
             height: 80px;
-            border-radius: 50%;
+            border-radius: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
+            font-size: 2.2rem;
             margin-bottom: 20px;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
         }
-        .portal-card h3 { margin-bottom: 10px; color: white; }
-        .portal-card p { font-size: 0.85rem; color: var(--text-light); line-height: 1.5; margin-bottom: 15px; }
+        .portal-card:hover .portal-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+        .portal-card h3 { 
+            margin-bottom: 12px; 
+            color: white; 
+            font-weight: 700; 
+            letter-spacing: -0.5px;
+        }
+        .portal-card p { 
+            font-size: 0.88rem; 
+            color: var(--text-light); 
+            line-height: 1.6; 
+            margin-bottom: 20px; 
+        }
+        .portal-card .btn {
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        .portal-card:hover .btn {
+            background: linear-gradient(135deg, var(--primary-accent) 0%, var(--secondary) 100%);
+            border-color: transparent;
+            color: white;
+            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);
+        }
     </style>
 </head>
 
 <body class="dark-mode">
+    <!-- Ambient Background Glows -->
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+    <div class="ambient-glow glow-3"></div>
+
     <nav class="navbar" style="position: absolute; background: transparent; border: none; box-shadow: none;">
         <ul class="nav-links">
             <li><a href="index.html">Platform</a></li>
