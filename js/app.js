@@ -71,6 +71,35 @@ const App = {
         }
     },
 
+    // --- Web Push Notifications Helper ---
+    notifications: {
+        async trigger(title, body) {
+            console.log(`[Notification Triggered] Title: ${title}, Body: ${body}`);
+            if (!('Notification' in window)) return;
+            
+            if (Notification.permission === 'granted') {
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.showNotification(title, {
+                            body: body,
+                            icon: '/favicon.svg',
+                            badge: '/favicon.svg',
+                            vibrate: [200, 100, 200],
+                            tag: 'complaint-update'
+                        });
+                    });
+                } else {
+                    new Notification(title, { body, icon: '/favicon.svg' });
+                }
+            } else if (Notification.permission !== 'denied') {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    this.trigger(title, body);
+                }
+            }
+        }
+    },
+
     // --- Data Management (Hybrid: Cache + API) ---
     store: {
         complaintsCache: [],
@@ -79,6 +108,9 @@ const App = {
         // Initialize Data (Fetch from server)
         async loadData() {
             try {
+                const previousCache = App.store.complaintsCache || [];
+                const user = App.store.getCurrentUser();
+
                 const [c, o] = await Promise.all([
                     App.api.get('/complaints'),
                     App.api.get('/officers')
@@ -86,6 +118,21 @@ const App = {
                 if (c) {
                     App.store.complaintsCache = c;
                     localStorage.setItem('sc_complaints', JSON.stringify(c));
+
+                    // Trigger Notification on status change
+                    if (user && previousCache.length > 0) {
+                        c.forEach(newComp => {
+                            if (newComp.userId === user.email) {
+                                const oldComp = previousCache.find(old => old.id === newComp.id);
+                                if (oldComp && oldComp.status !== newComp.status) {
+                                    App.notifications.trigger(
+                                        `Complaint Status Updated!`,
+                                        `Your issue "${newComp.subject}" is now: ${newComp.status.toUpperCase()}`
+                                    );
+                                }
+                            }
+                        });
+                    }
                 }
                 if (o) {
                     App.store.officersCache = o;
@@ -670,7 +717,8 @@ const App = {
             const all = App.store.getComplaints();
             const months = {};
             all.forEach(c => {
-                const d = new Date(c.timestamp);
+                const ts = c.timestamp || (c.created_at ? new Date(c.created_at).getTime() : Date.now());
+                const d = new Date(ts);
                 const key = d.toLocaleString('default', { month: 'short' });
                 months[key] = (months[key] || 0) + 1;
             });
@@ -772,6 +820,20 @@ const App = {
     },
 
     init: async () => {
+        // Register PWA Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => {
+                        console.log('[PWA] Service Worker registered:', reg.scope);
+                        if ('Notification' in window && Notification.permission === 'default') {
+                            Notification.requestPermission();
+                        }
+                    })
+                    .catch(err => console.error('[PWA] Service Worker registration failed:', err));
+            });
+        }
+
         // Load Data on Init
         await App.store.loadData();
 

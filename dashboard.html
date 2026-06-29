@@ -4,6 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- PWA Meta Tags & Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SmartCity CMS">
+    <link rel="apple-touch-icon" href="favicon.svg">
     <title>Dashboard | Smart Complaint</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -482,6 +488,30 @@
             }
         };
 
+        function getDistanceMeters(lat1, lon1, lat2, lon2) {
+            if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity;
+            const R = 6371e3; // meters
+            const phi1 = lat1 * Math.PI / 180;
+            const phi2 = lat2 * Math.PI / 180;
+            const deltaPhi = (lat2 - lat1) * Math.PI / 180;
+            const deltaLambda = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(deltaPhi/2) * Math.sin(deltaPhi/2) +
+                      Math.cos(phi1) * Math.cos(phi2) *
+                      Math.sin(deltaLambda/2) * Math.sin(deltaLambda/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function getTextSimilarity(str1, str2) {
+            if (!str1 || !str2) return 0;
+            const stopWords = new Set(['the', 'and', 'a', 'of', 'in', 'to', 'is', 'it', 'that', 'for', 'on', 'with', 'as', 'at']);
+            const words1 = new Set(str1.toLowerCase().split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w)));
+            const words2 = new Set(str2.toLowerCase().split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w)));
+            if (words1.size === 0 || words2.size === 0) return 0;
+            const intersection = new Set([...words1].filter(x => words2.has(x)));
+            return intersection.size / Math.max(words1.size, words2.size);
+        }
+
         window.checkForDuplicates = () => {
             const cat = document.getElementById('compCategory').value;
             const warningDiv = document.getElementById('duplicateWarning');
@@ -493,10 +523,30 @@
             }
 
             const complaints = App.store.getComplaints();
-            // Find active complaints in the same category
+            const latVal = parseFloat(document.getElementById('latInput').value);
+            const lngVal = parseFloat(document.getElementById('lngInput').value);
+            const subInput = document.getElementById('compSubject').value || '';
+            const descInput = document.getElementById('compDesc').value || '';
+
+            // Find active complaints in the same category with location proximity or high similarity
             const dup = complaints.find(c => {
-                if (c.status === 'resolved' || c.status === 'completed' || c.status === 'feedback_submitted') return false;
-                return c.category === cat;
+                if (c.status === 'resolved' || c.status === 'completed' || c.status === 'feedback_submitted' || c.status === 'rejected') return false;
+                if (c.category !== cat) return false;
+
+                // 1. Check coordinates (GPS proximity within 100 meters)
+                if (latVal && lngVal && c.latitude && c.longitude) {
+                    const dist = getDistanceMeters(latVal, lngVal, c.latitude, c.longitude);
+                    if (dist <= 100) return true;
+                }
+
+                // 2. Check title / description similarity
+                const titleSim = getTextSimilarity(subInput, c.subject || c.title || '');
+                const descSim = getTextSimilarity(descInput, c.description || '');
+                if (titleSim >= 0.4 || descSim >= 0.4) {
+                    return true;
+                }
+
+                return false;
             });
 
             if (dup) {
@@ -968,13 +1018,38 @@
                     longitude: longitude ? parseFloat(longitude) : null
                 });
 
-                if (result.success) {
+                 if (result.success) {
                     const successModal = document.getElementById('successModal');
                     if (successModal) {
+                        if (result.isDuplicate) {
+                            const iconDiv = successModal.querySelector('div');
+                            if (iconDiv) {
+                                iconDiv.style.background = 'rgba(245, 158, 11, 0.1)';
+                                iconDiv.style.boxShadow = '0 0 30px rgba(245, 158, 11, 0.4)';
+                                const iconEl = iconDiv.querySelector('i');
+                                if (iconEl) {
+                                    iconEl.className = 'fa-solid fa-thumbs-up';
+                                    iconEl.style.color = '#f59e0b';
+                                }
+                            }
+                            const heading = successModal.querySelector('h2');
+                            if (heading) {
+                                heading.innerText = 'Issue Supported!';
+                                heading.style.color = '#f59e0b';
+                            }
+                            const textPara = successModal.querySelector('p');
+                            if (textPara) {
+                                textPara.innerText = result.message || 'A similar complaint is already active at this location. We have automatically upvoted and linked you to it.';
+                            }
+                            const actionBtn = successModal.querySelector('button');
+                            if (actionBtn) {
+                                actionBtn.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+                            }
+                        }
                         modal.classList.remove('active');
                         successModal.classList.add('active');
                     } else {
-                        alert('Complaint Filed with Secure Digital Identity & GPS Signature!');
+                        alert(result.message || 'Complaint Filed successfully!');
                         window.location.reload();
                     }
                     e.target.reset();

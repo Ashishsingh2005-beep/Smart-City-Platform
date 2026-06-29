@@ -25,6 +25,33 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(__dirname)); // Serve frontend files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Lightweight In-Memory Rate Limiter Middleware
+const rateLimits = {};
+const rateLimiter = (limitCount, windowMs) => {
+    return (req, res, next) => {
+        const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        const now = Date.now();
+        
+        if (!rateLimits[ip]) {
+            rateLimits[ip] = [];
+        }
+        
+        // Filter out requests outside the window
+        rateLimits[ip] = rateLimits[ip].filter(timestamp => now - timestamp < windowMs);
+        
+        if (rateLimits[ip].length >= limitCount) {
+            console.warn(`[RATE LIMIT EXCEEDED] IP: ${ip} tried to access ${req.originalUrl}`);
+            return res.status(429).json({
+                success: false,
+                message: 'Too many requests from this IP. Please try again later.'
+            });
+        }
+        
+        rateLimits[ip].push(now);
+        next();
+    };
+};
+
 const mongoose = require('mongoose');
 
 // --- DATABASE CONFIGURATION ---
@@ -401,7 +428,9 @@ const ComplaintSchema = new mongoose.Schema({
     timestamp: { type: Number, default: Date.now },
     slaLimit: Date,
     isSlaBreached: { type: Boolean, default: false },
-    escalationLevel: { type: Number, default: 0 }
+    escalationLevel: { type: Number, default: 0 },
+    votes: { type: Number, default: 0 },
+    votedUsers: { type: Array, default: [] }
 });
 
 const BlockSchema = new mongoose.Schema({
@@ -699,7 +728,7 @@ app.post('/api/auth/verify-otp', async (req, res) => {
     }
 });
 
-app.post('/api/auth/register', async (req, res) => {
+app.post('/api/auth/register', rateLimiter(3, 60000), async (req, res) => {
     try {
         const { name, email, password, faceData } = req.body;
         const existing = await User.findOne({ email });
@@ -747,7 +776,7 @@ app.post('/api/auth/register', async (req, res) => {
     }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', rateLimiter(5, 60000), async (req, res) => {
     try {
         const { email, password } = req.body;
         const user = await User.findOne({ email, password });
@@ -814,7 +843,7 @@ const euclideanDistance = (arr1, arr2) => {
     return Math.sqrt(sum);
 };
 
-app.post('/api/auth/face-login', async (req, res) => {
+app.post('/api/auth/face-login', rateLimiter(5, 60000), async (req, res) => {
     try {
         const { faceData, expectedRole } = req.body;
         let loginDescriptor;
@@ -926,7 +955,7 @@ app.get('/api/complaints', async (req, res) => {
     res.json(complaints);
 });
 
-app.post('/api/complaints', authenticateToken, async (req, res) => {
+app.post('/api/complaints', authenticateToken, rateLimiter(10, 60000), async (req, res) => {
     try {
         const data = req.body;
         console.log('--- COMPLAINT SUBMISSION START ---');
@@ -990,6 +1019,89 @@ app.post('/api/complaints', authenticateToken, async (req, res) => {
         }
 
         console.log('[DEBUG] Final Category:', category);
+
+        // 1.1 AI / Geolocation Duplicate Check on Server
+        const activeComplaints = await Complaint.find({
+            status: { $nin: ['resolved', 'completed', 'feedback_submitted', 'rejected'] },
+            category: category
+        });
+
+        const latVal = data.latitude ? parseFloat(data.latitude) : null;
+        const lngVal = data.longitude ? parseFloat(data.longitude) : null;
+        const subInput = data.subject || '';
+        const descInput = data.description || '';
+
+        const calculateDistance = (lat1, lon1, lat2, lon2) => {
+            if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity;
+            const R = 6371e3; // meters
+            const phi1 = lat1 * Math.PI / 180;
+            const phi2 = lat2 * Math.PI / 180;
+            const deltaPhi = (lat2 - lat1) * Math.PI / 180;
+            const deltaLambda = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(deltaPhi/2) * Math.sin(deltaPhi/2) +
+                      Math.cos(phi1) * Math.cos(phi2) *
+                      Math.sin(deltaLambda/2) * Math.sin(deltaLambda/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        };
+
+        const getSimilarity = (str1, str2) => {
+            if (!str1 || !str2) return 0;
+            const stopWords = new Set(['the', 'and', 'a', 'of', 'in', 'to', 'is', 'it', 'that', 'for', 'on', 'with', 'as', 'at']);
+            const words1 = new Set(str1.toLowerCase().split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w)));
+            const words2 = new Set(str2.toLowerCase().split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w)));
+            if (words1.size === 0 || words2.size === 0) return 0;
+            const intersection = new Set([...words1].filter(x => words2.has(x)));
+            return intersection.size / Math.max(words1.size, words2.size);
+        };
+
+        const serverDup = activeComplaints.find(c => {
+            if (latVal && lngVal && c.latitude && c.longitude) {
+                const dist = calculateDistance(latVal, lngVal, c.latitude, c.longitude);
+                if (dist <= 100) return true;
+            }
+            const titleSim = getSimilarity(subInput, c.subject || c.title || '');
+            const descSim = getSimilarity(descInput, c.description || '');
+            if (titleSim >= 0.4 || descSim >= 0.4) return true;
+            return false;
+        });
+
+        if (serverDup) {
+            console.log(`[AI DUPLICATE PREVENTION] Found duplicate: ${serverDup.id}`);
+            if (!serverDup.votedUsers) serverDup.votedUsers = [];
+            if (!serverDup.votedUsers.includes(req.user.email)) {
+                serverDup.votes = (serverDup.votes || 0) + 1;
+                serverDup.votedUsers.push(req.user.email);
+                
+                if (serverDup.votes >= 5 && serverDup.priority !== 'Emergency') {
+                    serverDup.priority = 'High';
+                }
+                
+                serverDup.history.push({
+                    action: 'Upvoted (Auto-Merge)',
+                    timestamp: new Date().toISOString(),
+                    details: `Citizen ${req.user.name} reported a similar issue. Request was auto-merged and upvoted. Total votes: ${serverDup.votes}`
+                });
+                
+                await serverDup.save();
+                
+                try {
+                    await smartCityChain.addBlock({
+                        action: "COMPLAINT_MERGED",
+                        complaintId: serverDup.id,
+                        user: req.user.name,
+                        details: `Duplicate report by ${req.user.name} merged and parent upvoted.`
+                    });
+                } catch(err) {}
+            }
+            
+            return res.json({ 
+                success: true, 
+                isDuplicate: true, 
+                message: `A similar complaint (${serverDup.id}) is already active. Your report has been merged with it and the issue has been upvoted.`,
+                complaint: serverDup
+            });
+        }
 
         // 2. Smart Assignment logic
         const officer = await User.findOne({ role: 'officer', dept: category });

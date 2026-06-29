@@ -1,0 +1,18 @@
+{
+  "name": "Smart City CMS",
+  "short_name": "SmartCity CMS",
+  "description": "AI-Powered Citizen Governance & Complaint Management Platform",
+  "start_url": "/dashboard.html",
+  "display": "standalone",
+  "background_color": "#0b0f19",
+  "theme_color": "#06b6d4",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
