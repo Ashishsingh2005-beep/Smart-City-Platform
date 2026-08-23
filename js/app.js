@@ -474,6 +474,14 @@ const App = {
             } catch (e) {
                 return { success: false, message: "Biometric Auth Failed" };
             }
+        },
+
+        resetPassword: async (email, otp, newPassword) => {
+            try {
+                return await App.api.post('/auth/reset-password', { email, otp, newPassword });
+            } catch (e) {
+                return { success: false, message: "Server connection failed" };
+            }
         }
     },
 
@@ -933,3 +941,23 @@ document.addEventListener('DOMContentLoaded', App.init);
 
 // Export for inline usage if needed (though mostly handled via event listeners)
 window.App = App;
+
+// Password Visibility Toggle Function
+window.togglePasswordVisibility = function(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        if (icon) {
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        }
+    } else {
+        input.type = 'password';
+        if (icon) {
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+};

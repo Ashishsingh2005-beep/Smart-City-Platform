@@ -54,7 +54,12 @@
                 </div>
                     <div class="form-group">
                         <label>Password</label>
-                        <input type="password" id="password" placeholder="Create a strong password" required>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input type="password" id="password" placeholder="Create a strong password" required style="padding-right: 45px; width: 100%;">
+                            <button type="button" onclick="togglePasswordVisibility('password', this)" style="position: absolute; right: 12px; background: none; border: none; color: var(--text-light); cursor: pointer; padding: 5px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; z-index: 2;" title="Show/Hide Password">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>Aadhaar Number (Optional)</label>

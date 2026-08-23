@@ -190,7 +190,17 @@
                     </div>
                     <div class="form-group">
                         <label data-i18n="form_pass">Password</label>
-                        <input type="password" id="password" placeholder="••••••••" required>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input type="password" id="password" placeholder="••••••••" required style="padding-right: 45px; width: 100%;">
+                            <button type="button" onclick="togglePasswordVisibility('password', this)" style="position: absolute; right: 12px; background: none; border: none; color: var(--text-light); cursor: pointer; padding: 5px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; z-index: 2;" title="Show/Hide Password">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
+                            <a href="javascript:void(0)" onclick="openForgotPasswordModal()" style="color: var(--primary-accent); font-size: 0.85rem; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                                <i class="fa-solid fa-key" style="font-size: 0.75rem;"></i> Forgot Password?
+                            </a>
+                        </div>
                     </div>
                     <!-- CAPTCHA Section -->
                     <div class="form-group" style="background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; margin-top: 15px;">
@@ -393,8 +403,13 @@
                     <label
                         style="font-size: 0.8rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 1px;">Secret
                         Key (Password)</label>
-                    <input type="password" id="facePass" placeholder="••••••••"
-                        style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 12px;">
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <input type="password" id="facePass" placeholder="••••••••"
+                            style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 12px; padding-right: 45px; width: 100%;">
+                        <button type="button" onclick="togglePasswordVisibility('facePass', this)" style="position: absolute; right: 12px; background: none; border: none; color: var(--text-light); cursor: pointer; padding: 5px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; z-index: 2;" title="Show/Hide Password">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <button onclick="registerFaceUser()" class="btn btn-primary btn-block"
@@ -403,6 +418,76 @@
                 <button onclick="closeFaceAuth()" class="btn btn-secondary btn-block"
                     style="margin-top: 10px; background: transparent; color: var(--text-light); border: none;">Go
                     Back</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotPasswordModal" class="modal" style="z-index: 10002;">
+        <div class="modal-content" style="max-width: 460px; text-align: left; padding: 2.2rem; border-radius: 24px; background: rgba(15, 23, 42, 0.98); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 50px rgba(6, 182, 212, 0.25);">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div style="width: 60px; height: 60px; background: rgba(6, 182, 212, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; border: 1px solid rgba(6, 182, 212, 0.3);">
+                    <i class="fa-solid fa-lock-open" style="font-size: 1.6rem; color: var(--primary-accent);"></i>
+                </div>
+                <h3 style="font-size: 1.5rem; margin-bottom: 6px; color: white;">Reset Your Password</h3>
+                <p style="color: var(--text-light); font-size: 0.85rem;">Enter your registered Email or Phone Number to receive a verification code.</p>
+            </div>
+
+            <p id="forgotErrorMsg" class="error-msg" style="display: none; margin-bottom: 15px;"></p>
+            <p id="forgotSuccessMsg" style="display: none; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 12px; border-radius: 12px; font-size: 0.85rem; margin-bottom: 15px; text-align: center;"></p>
+
+            <!-- Step 1: Request OTP -->
+            <div id="forgotStep1">
+                <div class="form-group">
+                    <label style="font-size: 0.85rem; color: var(--text-light); font-weight: 600;">Registered Email or Phone</label>
+                    <input type="text" id="forgotEmail" placeholder="john@example.com or 9876543210" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); padding: 12px;">
+                </div>
+                <button type="button" onclick="sendForgotPasswordOTP()" id="btnSendForgotOTP" class="btn btn-primary btn-block" style="margin-top: 15px; padding: 12px;">
+                    <i class="fa-solid fa-paper-plane"></i> Send Verification Code
+                </button>
+            </div>
+
+            <!-- Step 2: Enter OTP & New Password -->
+            <div id="forgotStep2" style="display: none; margin-top: 15px;">
+                <div id="forgotOtpNotification" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.15)); padding: 12px 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(16, 185, 129, 0.3); text-align: center;">
+                    <span style="color: #d1d5db; font-size: 0.8rem;">Verification Code (Simulated):</span>
+                    <div id="forgotOtpDisplayCode" style="font-size: 1.8rem; font-weight: 800; letter-spacing: 8px; color: #10b981; font-family: monospace; margin-top: 4px;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label style="font-size: 0.8rem; color: var(--text-light);">Enter 6-Digit OTP</label>
+                    <input type="text" id="forgotOtpCode" placeholder="000000" maxlength="6" style="text-align: center; letter-spacing: 10px; font-size: 1.3rem; font-weight: bold; background: rgba(0,0,0,0.3); padding: 10px;">
+                </div>
+
+                <div class="form-group">
+                    <label style="font-size: 0.8rem; color: var(--text-light);">New Password</label>
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <input type="password" id="forgotNewPassword" placeholder="Create new password" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); padding: 12px; padding-right: 45px; width: 100%;">
+                        <button type="button" onclick="togglePasswordVisibility('forgotNewPassword', this)" style="position: absolute; right: 12px; background: none; border: none; color: var(--text-light); cursor: pointer; padding: 5px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; z-index: 2;" title="Show/Hide Password">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 12px;">
+                    <label style="font-size: 0.8rem; color: var(--text-light);">Confirm New Password</label>
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <input type="password" id="forgotConfirmPassword" placeholder="Confirm new password" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); padding: 12px; padding-right: 45px; width: 100%;">
+                        <button type="button" onclick="togglePasswordVisibility('forgotConfirmPassword', this)" style="position: absolute; right: 12px; background: none; border: none; color: var(--text-light); cursor: pointer; padding: 5px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; z-index: 2;" title="Show/Hide Password">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="button" onclick="resetPasswordSubmit()" class="btn btn-primary btn-block" style="margin-top: 20px; padding: 12px;">
+                    <i class="fa-solid fa-key"></i> Update Password & Sign In
+                </button>
+            </div>
+
+            <div style="margin-top: 20px; text-align: center;">
+                <button type="button" onclick="closeForgotPasswordModal()" class="btn btn-secondary" style="border-radius: 12px; padding: 8px 20px; font-size: 0.85rem; background: transparent; border: none; color: var(--text-light);">
+                    Cancel
+                </button>
             </div>
         </div>
     </div>
@@ -861,6 +946,107 @@
             document.getElementById('faceOverlay').style.display = 'none';
             document.getElementById('scanLine').style.display = 'none';
             document.getElementById('faceStatus').innerText = "Initializing camera...";
+        };
+
+        // Forgot Password Logic
+        window.openForgotPasswordModal = () => {
+            const modal = document.getElementById('forgotPasswordModal');
+            document.getElementById('forgotErrorMsg').style.display = 'none';
+            document.getElementById('forgotSuccessMsg').style.display = 'none';
+            document.getElementById('forgotStep1').style.display = 'block';
+            document.getElementById('forgotStep2').style.display = 'none';
+            document.getElementById('forgotEmail').value = document.getElementById('email').value || '';
+            document.getElementById('forgotOtpCode').value = '';
+            document.getElementById('forgotNewPassword').value = '';
+            document.getElementById('forgotConfirmPassword').value = '';
+            modal.classList.add('active');
+        };
+
+        window.closeForgotPasswordModal = () => {
+            const modal = document.getElementById('forgotPasswordModal');
+            modal.classList.remove('active');
+        };
+
+        window.sendForgotPasswordOTP = async () => {
+            const email = document.getElementById('forgotEmail').value.trim();
+            const err = document.getElementById('forgotErrorMsg');
+            err.style.display = 'none';
+
+            if (!email) {
+                err.innerText = "Please enter your registered Email or Phone Number.";
+                err.style.display = 'block';
+                return;
+            }
+
+            const btn = document.getElementById('btnSendForgotOTP');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Sending OTP...`;
+
+            const res = await App.auth.sendOtp(email);
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Send Verification Code`;
+
+            if (res.success) {
+                document.getElementById('forgotStep1').style.display = 'none';
+                document.getElementById('forgotStep2').style.display = 'block';
+                if (res.otp) {
+                    document.getElementById('forgotOtpDisplayCode').innerText = res.otp;
+                }
+            } else {
+                err.innerText = res.message || "Could not send verification code.";
+                err.style.display = 'block';
+            }
+        };
+
+        window.resetPasswordSubmit = async () => {
+            const email = document.getElementById('forgotEmail').value.trim();
+            const otp = document.getElementById('forgotOtpCode').value.trim();
+            const newPass = document.getElementById('forgotNewPassword').value;
+            const confirmPass = document.getElementById('forgotConfirmPassword').value;
+            const err = document.getElementById('forgotErrorMsg');
+            const success = document.getElementById('forgotSuccessMsg');
+            err.style.display = 'none';
+            success.style.display = 'none';
+
+            if (!otp || otp.length < 6) {
+                err.innerText = "Please enter the 6-digit verification code.";
+                err.style.display = 'block';
+                return;
+            }
+            if (!newPass || newPass.length < 4) {
+                err.innerText = "Password must be at least 4 characters long.";
+                err.style.display = 'block';
+                return;
+            }
+            if (newPass !== confirmPass) {
+                err.innerText = "Passwords do not match. Please check and try again.";
+                err.style.display = 'block';
+                return;
+            }
+
+            const res = await App.auth.resetPassword(email, otp, newPass);
+            if (res.success) {
+                success.innerText = res.message || "Password updated successfully!";
+                success.style.display = 'block';
+                
+                // Update local storage user list if mock mode
+                const users = App.store.getUsers();
+                const idx = users.findIndex(u => u.email === email);
+                if (idx !== -1) {
+                    users[idx].password = newPass;
+                    App.store.setUsers(users);
+                }
+                
+                setTimeout(() => {
+                    closeForgotPasswordModal();
+                    document.getElementById('email').value = email;
+                    document.getElementById('password').value = newPass;
+                    alert("Password reset successfully! You can now log in.");
+                }, 1500);
+            } else {
+                err.innerText = res.message || "Password reset failed.";
+                err.style.display = 'block';
+            }
         };
     </script>
 </body>

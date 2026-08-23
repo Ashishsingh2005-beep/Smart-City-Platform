@@ -813,6 +813,33 @@ app.post('/api/auth/login', rateLimiter(5, 60000), async (req, res) => {
     }
 });
 
+app.post('/api/auth/reset-password', rateLimiter(5, 60000), async (req, res) => {
+    try {
+        const { email, otp, newPassword } = req.body;
+        if (!email || !newPassword) {
+            return res.json({ success: false, message: 'Email and new password are required' });
+        }
+        if (otp) {
+            const stored = await OTP.findOne({ email });
+            if (!stored || stored.otp !== otp || new Date() > stored.expiresAt) {
+                return res.json({ success: false, message: 'Invalid or expired OTP code' });
+            }
+            await OTP.deleteMany({ email });
+        }
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.json({ success: false, message: 'Account not found with this email/phone number' });
+        }
+        user.password = newPassword;
+        await user.save();
+        console.log(`[PASSWORD RESET] Password successfully updated for user: ${email}`);
+        res.json({ success: true, message: 'Password reset successful! You can now log in with your new password.' });
+    } catch (e) {
+        console.error('Password reset error:', e);
+        res.status(500).json({ success: false, message: 'Server error during password reset' });
+    }
+});
+
 // Get all login logs (Admin only)
 app.get('/api/auth/login-logs', async (req, res) => {
     try {

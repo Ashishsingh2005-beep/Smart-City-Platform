@@ -81,7 +81,12 @@
                     <h3 style="margin-top: 2rem; margin-bottom: 1.5rem;">Security</h3>
                     <div class="form-group">
                         <label>New Password</label>
-                        <input type="password" id="settingsPass" placeholder="Leave blank to keep current">
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input type="password" id="settingsPass" placeholder="Leave blank to keep current" style="padding-right: 45px; width: 100%;">
+                            <button type="button" onclick="togglePasswordVisibility('settingsPass', this)" style="position: absolute; right: 12px; background: none; border: none; color: var(--text-light); cursor: pointer; padding: 5px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; z-index: 2;" title="Show/Hide Password">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Save Changes</button>
