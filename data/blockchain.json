@@ -536,5 +536,27 @@
     },
     "previousHash": "355644992f536fd1d43ae29bbabf393b01a453ec59a56fd814496f9aa326c8fe",
     "hash": "4d8bbe1923f24427016092323ec13656fbf9742447ca942db511d74f9dbcbb30"
+  },
+  {
+    "index": 46,
+    "timestamp": "2026-08-23T19:26:26.898Z",
+    "data": {
+      "action": "SLA_BREACH",
+      "complaintId": "#C-1014",
+      "details": "SLA breached. Priority: Low"
+    },
+    "previousHash": "4d8bbe1923f24427016092323ec13656fbf9742447ca942db511d74f9dbcbb30",
+    "hash": "f913233a9be8aa52d0541526f966d3676189a1ce64eb45911737befcb91ab23c"
+  },
+  {
+    "index": 47,
+    "timestamp": "2026-08-23T19:26:27.229Z",
+    "data": {
+      "action": "COMPLAINT_ESCALATED",
+      "complaintId": "#C-1014",
+      "details": "Escalated to Mayor"
+    },
+    "previousHash": "f913233a9be8aa52d0541526f966d3676189a1ce64eb45911737befcb91ab23c",
+    "hash": "6ab80cd2948aa6b6fba1275027ada63cb49f9904d9312ffb7e34e045a92809e1"
   }
 ]

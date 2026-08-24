@@ -605,6 +605,16 @@ textarea {
     backdrop-filter: blur(5px);
 }
 
+/* Fix: dropdown option items need an explicit dark bg so white text is readable */
+select option {
+    background: #1e293b;
+    color: #f1f5f9;
+}
+
+select option:disabled {
+    color: #64748b;
+}
+
 input::placeholder {
     color: rgba(255, 255, 255, 0.4);
 }
